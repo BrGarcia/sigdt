@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+alembic
+python-multipart
+jinja2
+python-jose[cryptography]
+passlib[bcrypt]
+pandas
+openpyxl
+pytest
+httpx
