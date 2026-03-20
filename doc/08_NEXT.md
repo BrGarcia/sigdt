@@ -19,4 +19,5 @@ O sistema atingiu o estado de MVP (v1.0.0-pre). Abaixo estão as recomendações
 
 ## 4. Evolução do Negócio
 *   **Versionamento de DTs:** Controle de revisões (REV) das diretivas técnicas.
+*   **Cadastro de Usuários (Self-Registration):** Permitir que novos usuários se cadastrem no sistema para que suas senhas sejam pessoais e seguras, eliminando a necessidade de o administrador criar senhas iniciais.
 *   **Gestão de Componentes:** Expandir o sistema para controlar não apenas a aeronave, mas seus componentes (motores, APU, hélice) de forma independente.
