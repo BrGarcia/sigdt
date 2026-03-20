@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
     <nav class="bg-blue-900 p-4 shadow-lg text-white">
         <div class="container mx-auto flex justify-between items-center">
@@ -15,12 +17,12 @@
             <div class="space-x-4">
                 <a href="/" class="hover:text-blue-300 transition-colors">Dashboard</a>
                 {% if current_user %}
-                    {% if current_user.role == 'admin' %}
-                        <a href="/users/manage" class="hover:text-blue-300 transition-colors">Gerenciar Usuários</a>
-                    {% endif %}
-                    <button id="logout-button" class="hover:text-red-300 transition-colors">Logout</button>
+                {% if current_user.role == 'admin' %}
+                <a href="/users/manage" class="hover:text-blue-300 transition-colors">Gerenciar Usuários</a>
+                {% endif %}
+                <button id="logout-button" class="hover:text-red-300 transition-colors">Logout</button>
                 {% else %}
-                    <a href="/login" class="hover:text-blue-300 transition-colors">Login</a>
+                <a href="/login" class="hover:text-blue-300 transition-colors">Login</a>
                 {% endif %}
             </div>
         </div>
@@ -29,31 +31,36 @@
     <main class="container mx-auto mt-8 p-4">
         <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">{{ diretiva.diretiva.codigo_diretiva }}</h2>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
                 <p><strong>FADT:</strong> {{ diretiva.diretiva.fadt }}</p>
                 <p><strong>Matrícula:</strong> {{ diretiva.aeronave.matricula }}</p>
-                <p><strong>N/S Aeronave:</strong> {{ diretiva.aeronave.numero_serie }}</p>
+                <p><strong>SN Aeronave:</strong> {{ diretiva.aeronave.numero_serie }}</p>
                 <p><strong>Status Atual:</strong> {{ diretiva.status }}</p>
                 <p><strong>Especialidade:</strong> {{ diretiva.diretiva.especialidade or 'Não definida' }}</p>
                 <p><strong>GUT Score:</strong> {{ diretiva.gut }}</p>
             </div>
 
             <div class="mt-6">
-                <h3 class="text-lg font-semibold text-gray-800">Objetivo (Master)</h3>
+                <h3 class="text-lg font-semibold text-gray-800">Objetivo</h3>
                 <p class="text-gray-700">{{ diretiva.diretiva.objetivo }}</p>
             </div>
 
             <div class="mt-6">
-                <h3 class="text-lg font-semibold text-gray-800">Observações (Aeronave {{ diretiva.aeronave.matricula }})</h3>
+                <h3 class="text-lg font-semibold text-gray-800">Observações</h3>
                 <p class="text-gray-700 whitespace-pre-wrap">{{ diretiva.observacao or 'Sem observações.' }}</p>
             </div>
 
             {% if diretiva.pdf_path %}
             <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
                 <h3 class="text-lg font-semibold text-blue-900 mb-2">Documentação Anexa</h3>
-                <a href="/static/uploads/{{ diretiva.pdf_path }}" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <a href="/static/uploads/{{ diretiva.pdf_path }}" target="_blank"
+                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
+                    </svg>
                     Visualizar Documento (PDF)
                 </a>
             </div>
@@ -62,32 +69,42 @@
             {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspector') %}
             <div class="mt-8 border-t pt-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Atualizar Execução na Aeronave</h3>
-                <form hx-post="/directives/{{ diretiva.id }}" hx-target="body" hx-encoding="multipart/form-data" class="space-y-4">
+                <form hx-post="/directives/{{ diretiva.id }}" hx-target="body" hx-encoding="multipart/form-data"
+                    class="space-y-4">
                     <div>
                         <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
-                        <select name="status" id="status" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="Pendente" {% if diretiva.status == 'Pendente' %}selected{% endif %}>Pendente</option>
-                            <option value="Em andamento" {% if diretiva.status == 'Em andamento' %}selected{% endif %}>Em andamento</option>
-                            <option value="Concluída" {% if diretiva.status == 'Concluída' %}selected{% endif %}>Concluída</option>
-                            <option value="Não aplicável" {% if diretiva.status == 'Não aplicável' %}selected{% endif %}>Não aplicável</option>
+                        <select name="status" id="status"
+                            class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="Pendente" {% if diretiva.status=='Pendente' %}selected{% endif %}>Pendente
+                            </option>
+                            <option value="Em andamento" {% if diretiva.status=='Em andamento' %}selected{% endif %}>Em
+                                andamento</option>
+                            <option value="Concluída" {% if diretiva.status=='Concluída' %}selected{% endif %}>Concluída
+                            </option>
+                            <option value="Não aplicável" {% if diretiva.status=='Não aplicável' %}selected{% endif %}>
+                                Não aplicável</option>
                         </select>
                     </div>
                     <div>
-                        <label for="especialidade" class="block text-sm font-medium text-gray-700">Especialidade Responsável (Master)</label>
+                        <label for="especialidade" class="block text-sm font-medium text-gray-700">Especialidade
+                            Responsável (Master)</label>
                         <select name="especialidade" id="especialidade" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500" {% if current_user.role != 'admin' %}disabled{% endif %}>
                             <option value="" {% if not diretiva.diretiva.especialidade %}selected{% endif %}>Não definida</option>
-                            <option value="ELETRONICA" {% if diretiva.diretiva.especialidade == 'ELETRONICA' %}selected{% endif %}>ELETRONICA</option>
-                            <option value="ELETRICA" {% if diretiva.diretiva.especialidade == 'ELETRICA' %}selected{% endif %}>ELETRICA</option>
+                            <option value="ELETRÔNICA" {% if diretiva.diretiva.especialidade == 'ELETRÔNICA' %}selected{% endif %}>ELETRÔNICA</option>
+                            <option value="ELÉTRICA" {% if diretiva.diretiva.especialidade == 'ELÉTRICA' %}selected{% endif %}>ELÉTRICA</option>
                             <option value="CÉLULA" {% if diretiva.diretiva.especialidade == 'CÉLULA' %}selected{% endif %}>CÉLULA</option>
-                            <option value="HIDRAULICA" {% if diretiva.diretiva.especialidade == 'HIDRAULICA' %}selected{% endif %}>HIDRAULICA</option>
+                            <option value="HIDRÁULICA" {% if diretiva.diretiva.especialidade == 'HIDRÁULICA' %}selected{% endif %}>HIDRÁULICA</option>
+                            <option value="MOTORES" {% if diretiva.diretiva.especialidade == 'MOTORES' %}selected{% endif %}>MOTORES</option>
                             <option value="EQV" {% if diretiva.diretiva.especialidade == 'EQV' %}selected{% endif %}>EQV</option>
                         </select>
+
                         {% if current_user.role != 'admin' %}
                         <input type="hidden" name="especialidade" value="{{ diretiva.diretiva.especialidade or '' }}">
                         {% endif %}
                     </div>
                     <div>
-                        <label for="pdf_file" class="block text-sm font-medium text-gray-700">Alterar/Anexar Comprovante (PDF)</label>
+                        <label for="pdf_file" class="block text-sm font-medium text-gray-700">Alterar/Anexar Comprovante
+                            (PDF)</label>
                         <input type="file" name="pdf_file" id="pdf_file" accept=".pdf" class="mt-1 block w-full text-sm text-gray-500
                             file:mr-4 file:py-2 file:px-4
                             file:rounded-md file:border-0
@@ -96,10 +113,13 @@
                             hover:file:bg-blue-100">
                     </div>
                     <div>
-                        <label for="observacoes" class="block text-sm font-medium text-gray-700">Observações de Execução</label>
-                        <textarea name="observacoes" id="observacoes" rows="4" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">{{ diretiva.observacao or '' }}</textarea>
+                        <label for="observacoes" class="block text-sm font-medium text-gray-700">Observações de
+                            Execução</label>
+                        <textarea name="observacoes" id="observacoes" rows="4"
+                            class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">{{ diretiva.observacao or '' }}</textarea>
                     </div>
-                    <button type="submit" class="bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-blue-800">Salvar Alterações</button>
+                    <button type="submit" class="bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-blue-800">Salvar
+                        Alterações</button>
                 </form>
             </div>
             {% endif %}
@@ -108,11 +128,12 @@
 
     {% if current_user %}
     <script>
-        document.getElementById('logout-button').addEventListener('click', function() {
+        document.getElementById('logout-button').addEventListener('click', function () {
             localStorage.removeItem('access_token');
             window.location.href = '/login';
         });
     </script>
     {% endif %}
 </body>
+
 </html>

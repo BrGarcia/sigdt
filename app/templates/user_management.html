@@ -38,6 +38,18 @@
                         <label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
                         <input type="password" name="password" id="password" required class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
                     </div>
+                    <div>
+                        <label for="especialidade" class="block text-sm font-medium text-gray-700">Especialidade</label>
+                        <select name="especialidade" id="especialidade" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Não definida</option>
+                            <option value="ELETRÔNICA">ELETRÔNICA</option>
+                            <option value="ELÉTRICA">ELÉTRICA</option>
+                            <option value="CÉLULA">CÉLULA</option>
+                            <option value="HIDRÁULICA">HIDRÁULICA</option>
+                            <option value="MOTORES">MOTORES</option>
+                            <option value="EQV">EQV</option>
+                        </select>
+                    </div>
                     <button type="submit" class="w-full bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-blue-800">Criar Inspetor</button>
                 </form>
             </div>
@@ -48,8 +60,7 @@
                 <div id="user-list" class="space-y-2">
                     {% for user in users %}
                         <div class="flex justify-between items-center p-2 border-b">
-                            <span>{{ user.username }} ({{ user.role }})</span>
-                            <!-- Add delete/edit buttons here if needed -->
+                            <span>{{ user.username }} ({{ user.role }}) - {{ user.especialidade or 'Sem especialidade' }}</span>
                         </div>
                     {% endfor %}
                 </div>

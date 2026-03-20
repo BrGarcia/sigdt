@@ -63,20 +63,20 @@ def test_system_integrity():
 
     # 4. Testar Restrição de Especialidade (Inspetor)
     print("4. Testando restrição de especialidade (Inspetor)...")
-    # Criar inspetor de ELETRICA
+    # Criar inspetor de ELÉTRICA
     with Session(engine) as session:
-        user_in = User(username=f"insp_{uid}", email=f"insp_{uid}@test.com", hashed_password="hashed", role="inspector", especialidade="ELETRICA")
+        user_in = User(username=f"insp_{uid}", email=f"insp_{uid}@test.com", hashed_password="hashed", role="inspector", especialidade="ELÉTRICA")
         session.add(user_in)
-        # Criar diretiva de ELETRONICA
+        # Criar diretiva de ELETRÔNICA
         d_eletronica = session.exec(select(Diretiva).where(Diretiva.fadt == f"FADT-{uid}")).one()
-        d_eletronica.especialidade = "ELETRONICA"
+        d_eletronica.especialidade = "ELETRÔNICA"
         session.add(d_eletronica)
         session.commit()
     
     token = security.create_access_token(data={"sub": f"insp_{uid}"})
     client.cookies.set("access_token", token)
     
-    # Tentar editar diretiva de ELETRONICA sendo de ELETRICA
+    # Tentar editar diretiva de ELETRÔNICA sendo de ELÉTRICA
     response = client.post(f"/directives/{link_id}", data={"status": "Concluída", "observacoes": "tentativa"})
     assert response.status_code == 403
     print("   [OK] Inspetor impedido de editar especialidade diferente.")
