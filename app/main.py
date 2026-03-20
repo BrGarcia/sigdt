@@ -27,6 +27,20 @@ templates = Jinja2Templates(directory="app/templates")
 # Gatekeeper Password
 GATEKEEPER_PASSWORD = os.getenv("GATEKEEPER_PASSWORD", "asdf1234")
 
+# Simple In-Memory Rate Limiter (No external DB needed)
+from collections import defaultdict
+import time
+login_attempts = defaultdict(list)
+
+def is_rate_limited(key: str, max_attempts: int = 5, window: int = 60):
+    now = time.time()
+    # Clean old attempts
+    login_attempts[key] = [t for t in login_attempts[key] if now - t < window]
+    if len(login_attempts[key]) >= max_attempts:
+        return True
+    login_attempts[key].append(now)
+    return False
+
 def check_gatekeeper(request: Request):
     if request.cookies.get("gatekeeper_access") == "granted":
         return True
@@ -59,7 +73,11 @@ async def gatekeeper_page(request: Request):
     return templates.TemplateResponse("gatekeeper.html", {"request": request})
 
 @app.post("/gatekeeper")
-async def gatekeeper_verify(password: str = Form(...)):
+async def gatekeeper_verify(request: Request, password: str = Form(...)):
+    client_ip = request.client.host
+    if is_rate_limited(f"gatekeeper_{client_ip}"):
+        raise HTTPException(status_code=429, detail="Muitas tentativas. Tente novamente em 1 minuto.")
+
     if password == GATEKEEPER_PASSWORD:
         response = RedirectResponse(url="/", status_code=303)
         response.set_cookie(
@@ -203,6 +221,10 @@ async def update_directive_details(
         content = await pdf_file.read()
         if len(content) > MAX_FILE_SIZE:
             raise HTTPException(status_code=400, detail="O arquivo é muito grande. O limite máximo é 10MB.")
+        
+        # Magic Number Check (PDF signature: %PDF-)
+        if not content.startswith(b'%PDF-'):
+            raise HTTPException(status_code=400, detail="Arquivo inválido. Apenas arquivos PDF reais são permitidos.")
         
         upload_dir = "app/static/uploads"
         os.makedirs(upload_dir, exist_ok=True)

@@ -72,7 +72,12 @@ def get_current_inspector_user(current_user: models.User = Depends(get_current_u
     return current_user
 
 @router.post("/token")
-async def login_for_access_token(response: Response, db: Session = Depends(get_session), form_data: OAuth2PasswordRequestForm = Depends()):
+async def login_for_access_token(request: Request, response: Response, db: Session = Depends(get_session), form_data: OAuth2PasswordRequestForm = Depends()):
+    from app.main import is_rate_limited
+    client_ip = request.client.host
+    if is_rate_limited(f"login_{client_ip}"):
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Muitas tentativas de login. Tente novamente em 1 minuto.")
+
     user = actions.get_user(db, username=form_data.username)
     if not user or not security.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(

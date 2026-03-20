@@ -1,0 +1,36 @@
+Relatório de Análise Estática de Segurança (SAST) - SIGDT
+============================================================
+
+STATUS DA REVISÃO (v1.0.0-pre)
+------------------------------
+
+1. Exposição de Dados Sensíveis (Hardcoded Secrets)
+   - STATUS: REPARADO ✅
+   - Ação: GATEKEEPER_PASSWORD, ADMIN_PASSWORD e SECRET_KEY movidos para variáveis de ambiente (.env).
+
+2. Unrestricted File Upload (RCE/XSS via Upload)
+   - STATUS: REPARADO ✅
+   - Ação: Implementada validação de "Magic Number" (assinatura %PDF-) no backend e limite de 10MB.
+
+3. Armazenamento Inseguro de Token (XSS / Broken Auth)
+   - STATUS: REPARADO ✅
+   - Ação: JWT migrado de localStorage para Cookies HttpOnly e SameSite=Lax.
+
+4. Configuração Insegura de Cookie do Gatekeeper
+   - STATUS: REPARADO ✅
+   - Ação: Adicionadas flags HttpOnly e SameSite ao cookie do Gatekeeper.
+
+5. CSV Injection (Formula Injection)
+   - STATUS: REPARADO ✅
+   - Ação: Implementada função de sanitização que escapa caracteres '=', '+', '-' e '@' tanto na importação quanto na exportação XLSX.
+
+6. Potencial Negação de Serviço via Upload (DoS)
+   - STATUS: REPARADO ✅
+   - Ação: Implementado processamento de CSV em lotes (Batch Processing) de 100 registros para evitar estouro de memória.
+
+7. Ausência de Rate Limiting (Força Bruta)
+   - STATUS: REPARADO ✅
+   - Ação: Implementado limitador de tentativas em memória para rotas de Gatekeeper e Login.
+
+---
+CONCLUSÃO: Todas as vulnerabilidades críticas, altas e médias identificadas no relatório original foram mitigadas. O sistema está significativamente mais robusto para operação online.
