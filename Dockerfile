@@ -13,8 +13,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia o restante do código do projeto para o container
 COPY . .
 
-# Expõe a porta que o FastAPI vai rodar
-EXPOSE 8000
-
-# Comando para iniciar a aplicação
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# A porta será definida pela variável de ambiente PORT do Railway
+# Se não houver, o padrão é 8000
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
