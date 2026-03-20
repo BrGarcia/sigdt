@@ -5,6 +5,11 @@ from app.database import engine
 from io import StringIO
 import numpy as np
 
+def sanitize_formula(value):
+    if isinstance(value, str) and value.startswith(('=', '+', '-', '@')):
+        return "'" + value
+    return value
+
 def process_csv(csv_content: str):
     # The file uses ';' as separator
     df = pd.read_csv(StringIO(csv_content), sep=';', skipinitialspace=True)
@@ -19,10 +24,15 @@ def process_csv(csv_content: str):
         
         if pd.isna(val) or str(val).lower() == 'nan' or str(val).strip() == '':
             return None
-        return str(val).strip()
+        return sanitize_formula(str(val).strip())
 
+    BATCH_SIZE = 100
     with Session(engine) as session:
         for i, row in df.iterrows():
+            # ... (rest of the loop remains similar but uses batch commits)
+            # Implementation note: For v1.0.0-pre, let's keep the logic but ensure commit every BATCH_SIZE
+            
+            # (Keeping the original UPSERT logic but applying it within the session)
             # 1. Obter ou criar Aeronave (UPSERT via Matrícula)
             matricula = get_val(row, 'MATR')
             numero_serie = get_val(row, 'SN')
@@ -36,9 +46,9 @@ def process_csv(csv_content: str):
             if not aeronave:
                 aeronave = Aeronave(matricula=matricula, numero_serie=numero_serie)
                 session.add(aeronave)
-                session.flush() # Para obter o ID
+                session.flush() 
             else:
-                aeronave.numero_serie = numero_serie # Atualiza SN se necessário
+                aeronave.numero_serie = numero_serie 
                 session.add(aeronave)
 
             # 2. Obter ou criar Diretiva Técnica (UPSERT via FADT)
@@ -82,23 +92,24 @@ def process_csv(csv_content: str):
                 "aeronave_id": aeronave.id,
                 "diretiva_id": diretiva.id,
                 "status": get_val(row, 'STATUS'),
-                "ordem_aplicada": get_val(row, 'ORDEM'), # Pode ser refinado conforme regra de negócio
-                "observacao": get_val(row, 'OBSERVAÇÕES') or get_val(row, 'PJ'), # Exemplo de mapeamento
+                "ordem_aplicada": get_val(row, 'ORDEM'),
+                "observacao": get_val(row, 'OBSERVAÇÕES') or get_val(row, 'PJ'),
             }
             
             if not link:
                 link = DiretivaAeronave(**link_data)
-                link.tendencia = 3 # Valor padrão inicial
+                link.tendencia = 3 
                 session.add(link)
             else:
                 for key, value in link_data.items():
                     setattr(link, key, value)
                 session.add(link)
             
-            # Recalcular GUT para este vínculo
-            # Note: link.diretiva needs to be loaded or we use dt_data/diretiva object
             link.diretiva = diretiva
             link.calculate_gut()
+
+            if (i + 1) % BATCH_SIZE == 0:
+                session.commit()
 
         session.commit()
     

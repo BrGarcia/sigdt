@@ -25,7 +25,7 @@ app = FastAPI(title="SIGDT - Sistema de Gestão de Diretivas Técnicas")
 templates = Jinja2Templates(directory="app/templates")
 
 # Gatekeeper Password
-GATEKEEPER_PASSWORD = "asdf1234"
+GATEKEEPER_PASSWORD = os.getenv("GATEKEEPER_PASSWORD", "asdf1234")
 
 def check_gatekeeper(request: Request):
     if request.cookies.get("gatekeeper_access") == "granted":
@@ -39,7 +39,8 @@ def on_startup():
     with Session(engine) as session:
         admin_user = user_actions.get_user(session, "admin")
         if not admin_user:
-            user_in = user_schemas.UserCreate(username="admin", email="admin@example.com", password="admin")
+            admin_pwd = os.getenv("ADMIN_PASSWORD", "admin")
+            user_in = user_schemas.UserCreate(username="admin", email="admin@example.com", password=admin_pwd)
             admin_user = user_actions.create_user(session, user_in, role="admin")
         else:
             admin_user.role = "admin"
@@ -61,7 +62,14 @@ async def gatekeeper_page(request: Request):
 async def gatekeeper_verify(password: str = Form(...)):
     if password == GATEKEEPER_PASSWORD:
         response = RedirectResponse(url="/", status_code=303)
-        response.set_cookie(key="gatekeeper_access", value="granted", max_age=86400 * 7) # 1 day * 7
+        response.set_cookie(
+            key="gatekeeper_access", 
+            value="granted", 
+            max_age=86400 * 7,
+            httponly=True,
+            samesite="lax",
+            secure=False # Should be True in production with HTTPS
+        )
         return response
     return RedirectResponse(url="/gatekeeper?error=1", status_code=303)
 
@@ -190,6 +198,12 @@ async def update_directive_details(
 
     # Handle PDF upload
     if pdf_file and pdf_file.filename:
+        # 10MB Limit check
+        MAX_FILE_SIZE = 10 * 1024 * 1024 # 10MB
+        content = await pdf_file.read()
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail="O arquivo é muito grande. O limite máximo é 10MB.")
+        
         upload_dir = "app/static/uploads"
         os.makedirs(upload_dir, exist_ok=True)
         
@@ -198,7 +212,6 @@ async def update_directive_details(
         file_path = os.path.join(upload_dir, new_filename)
         
         with open(file_path, "wb") as buffer:
-            content = await pdf_file.read()
             buffer.write(content)
         
         link.pdf_path = new_filename
@@ -281,19 +294,24 @@ async def export_xlsx(session: Session = Depends(get_session)):
     statement = select(DiretivaAeronave).join(Diretiva).join(Aeronave)
     links = session.exec(statement).all()
     
+    def sanitize_formula(value):
+        if isinstance(value, str) and value.startswith(('=', '+', '-', '@')):
+            return "'" + value
+        return value
+
     data = []
     for link in links:
         data.append({
-            'PN': link.diretiva.pn if hasattr(link.diretiva, 'pn') else '', 
-            'MATRICULA': link.aeronave.matricula,
-            'NUMERO_SERIE': link.aeronave.numero_serie,
-            'DIRETIVA_TECNICA': link.diretiva.codigo_diretiva,
-            'FADT': link.diretiva.fadt,
-            'STATUS': link.status,
-            'CLA': link.diretiva.classe,
-            'CAT': link.diretiva.categoria,
-            'ESPECIALIDADE': link.diretiva.especialidade,
-            'OBSERVACOES': link.observacao,
+            'PN': sanitize_formula(link.diretiva.pn if hasattr(link.diretiva, 'pn') else ''), 
+            'MATRICULA': sanitize_formula(link.aeronave.matricula),
+            'NUMERO_SERIE': sanitize_formula(link.aeronave.numero_serie),
+            'DIRETIVA_TECNICA': sanitize_formula(link.diretiva.codigo_diretiva),
+            'FADT': sanitize_formula(link.diretiva.fadt),
+            'STATUS': sanitize_formula(link.status),
+            'CLA': sanitize_formula(link.diretiva.classe),
+            'CAT': sanitize_formula(link.diretiva.categoria),
+            'ESPECIALIDADE': sanitize_formula(link.diretiva.especialidade),
+            'OBSERVACOES': sanitize_formula(link.observacao),
             'GUT': link.gut
         })
     

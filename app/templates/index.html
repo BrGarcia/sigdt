@@ -9,10 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         htmx.on('htmx:configRequest', function (evt) {
-            const token = localStorage.getItem('access_token');
-            if (token) {
-                evt.detail.headers['Authorization'] = 'Bearer ' + token;
-            }
+            // HTMX will automatically include cookies
         });
     </script>
 </head>
@@ -109,10 +106,16 @@
     </footer>
     {% if current_user %}
     <script>
-        document.getElementById('logout-button').addEventListener('click', function() {
-            localStorage.removeItem('access_token');
-            document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
-            window.location.href = '/login';
+        document.getElementById('logout-button').addEventListener('click', async function() {
+            try {
+                const response = await fetch('/users/logout', { method: 'POST' });
+                if (response.ok) {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Logout failed', error);
+                window.location.href = '/login';
+            }
         });
     </script>
     {% endif %}

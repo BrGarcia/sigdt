@@ -53,10 +53,6 @@
                 });
 
                 if (response.ok) {
-                    const data = await response.json();
-                    localStorage.setItem('access_token', data.access_token);
-                    // Set cookie for browser navigation
-                    document.cookie = `access_token=${data.access_token}; path=/; max-age=1800; SameSite=Lax`;
                     window.location.href = '/';
                 } else {
                     const errorData = await response.json();

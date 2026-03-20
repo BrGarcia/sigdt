@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Form, Cookie
+from fastapi import APIRouter, Depends, HTTPException, status, Form, Cookie, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 from app.database import get_session
 from . import actions, schemas, security, models
 from typing import Optional, List
+from datetime import timedelta
 
 router = APIRouter(
     prefix="/users",
@@ -70,8 +71,8 @@ def get_current_inspector_user(current_user: models.User = Depends(get_current_u
         )
     return current_user
 
-@router.post("/token", response_model=schemas.Token)
-async def login_for_access_token(db: Session = Depends(get_session), form_data: OAuth2PasswordRequestForm = Depends()):
+@router.post("/token")
+async def login_for_access_token(response: Response, db: Session = Depends(get_session), form_data: OAuth2PasswordRequestForm = Depends()):
     user = actions.get_user(db, username=form_data.username)
     if not user or not security.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
@@ -79,10 +80,24 @@ async def login_for_access_token(db: Session = Depends(get_session), form_data: 
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
-        data={"sub": user.username}
+        data={"sub": user.username}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    response.set_cookie(
+        key="access_token", 
+        value=access_token, 
+        httponly=True, 
+        max_age=security.ACCESS_TOKEN_EXPIRE_MINUTES * 60, 
+        samesite="lax",
+        secure=False # True in production
+    )
+    return {"status": "success"}
+
+@router.post("/logout")
+async def logout(response: Response):
+    response.delete_cookie("access_token")
+    return {"status": "success"}
 
 @router.post("/", response_model=models.User, dependencies=[Depends(get_current_admin_user)])
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_session)):

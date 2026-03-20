@@ -77,10 +77,16 @@
     </main>
 
     <script>
-        document.getElementById('logout-button').addEventListener('click', function() {
-            localStorage.removeItem('access_token');
-            document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
-            window.location.href = '/login';
+        document.getElementById('logout-button').addEventListener('click', async function() {
+            try {
+                const response = await fetch('/users/logout', { method: 'POST' });
+                if (response.ok) {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Logout failed', error);
+                window.location.href = '/login';
+            }
         });
     </script>
 </body>
