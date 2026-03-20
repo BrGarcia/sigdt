@@ -15,7 +15,9 @@
             <div class="space-x-4">
                 <a href="/" class="hover:text-blue-300 transition-colors">Dashboard</a>
                 {% if current_user %}
-                    <a href="/users/me" class="hover:text-blue-300 transition-colors">{{ current_user.username }}</a>
+                    {% if current_user.role == 'admin' %}
+                        <a href="/users/manage" class="hover:text-blue-300 transition-colors">Gerenciar Usuários</a>
+                    {% endif %}
                     <button id="logout-button" class="hover:text-red-300 transition-colors">Logout</button>
                 {% else %}
                     <a href="/login" class="hover:text-blue-300 transition-colors">Login</a>
