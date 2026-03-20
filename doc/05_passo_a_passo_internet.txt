@@ -1,0 +1,52 @@
+# Guia de Hospedagem e Acesso Remoto - SIGDT
+
+Este documento descreve as principais opções para hospedar o projeto SIGDT em sua máquina local e acessá-lo com segurança através da internet.
+
+---
+
+## Opção 1: Cloudflare Tunnel (Recomendado)
+Esta é a forma mais segura e moderna, pois não exige abertura de portas no roteador e oferece HTTPS automático.
+
+1. **Requisitos:** Possuir um domínio registrado na Cloudflare (grátis ou pago).
+2. **Passos:**
+   - Instale o agente `cloudflared` em sua máquina.
+   - Autentique o agente com sua conta Cloudflare: `cloudflared tunnel login`.
+   - Crie um túnel: `cloudflared tunnel create sigdt-tunnel`.
+   - Configure o roteamento: `cloudflared tunnel route dns sigdt-tunnel sigdt.seu-dominio.com`.
+   - Inicie o túnel apontando para o seu container: `cloudflared tunnel run --url http://localhost:8000 sigdt-tunnel`.
+3. **Vantagem:** Oculta seu IP real, protege contra ataques e fornece SSL (HTTPS) de forma simples.
+
+---
+
+## Opção 2: Tailscale ou ZeroTier (VPN Privada)
+Ideal se o acesso for restrito a você ou a uma equipe específica, sem exposição ao público geral.
+
+1. **Passos:**
+   - Instale o **Tailscale** na máquina que hospeda o SIGDT e nos dispositivos que precisam de acesso (celular, notebook remoto).
+   - Faça login com a mesma conta em todos os dispositivos.
+   - O Tailscale atribuirá um IP privado fixo à sua máquina (ex: `100.x.y.z`).
+   - Acesse o sistema via `http://100.x.y.z:8000` de qualquer lugar onde a VPN esteja ativa.
+2. **Vantagem:** Segurança máxima (rede isolada da internet pública) e configuração em segundos.
+
+---
+
+## Opção 3: DNS Dinâmico (DDNS) + Redirecionamento de Portas
+O método tradicional, mas exige mais cuidados de segurança.
+
+1. **Passos:**
+   - Use um serviço de DDNS (No-IP, DuckDNS) para criar um endereço fixo (ex: `meusigdt.ddns.net`).
+   - No roteador, configure o **Port Forwarding**: Porta externa 80 ou 443 -> IP local do PC -> Porta interna 8000.
+   - **Importante:** Configure um Proxy Reverso (Nginx ou Caddy) com Let's Encrypt para garantir acesso via HTTPS.
+2. **Desvantagem:** Expõe sua porta diretamente à internet e depende de o provedor não usar CGNAT.
+
+---
+
+## Cuidados Críticos de Segurança
+
+1. **Mude a Senha Padrão:** O primeiro passo ao colocar o sistema online deve ser trocar a senha do usuário `admin/admin`.
+2. **Firewall:** Verifique se o Firewall do Windows/Linux permite conexões na porta desejada (padrão 8000).
+3. **Logs:** Monitore os logs do container Docker para identificar tentativas de acesso não autorizadas.
+4. **CGNAT:** Se seu provedor usa CGNAT (IP compartilhado), apenas a **Opção 1** ou **Opção 2** funcionarão.
+
+---
+Documento gerado em 20 de março de 2026.

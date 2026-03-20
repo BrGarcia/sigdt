@@ -1,0 +1,63 @@
+ESTRATÉGIA DE BANCO DE DADOS – CONTROLE DE DIRETIVAS TÉCNICAS
+
+1.  VISÃO GERAL O sistema tem como objetivo controlar a aplicação de
+    diretivas técnicas em uma frota de aeronaves, utilizando PostgreSQL
+    como banco de dados relacional. A entrada de dados será realizada
+    por meio de arquivos CSV individuais por aeronave.
+
+2.  MODELO DE DADOS
+
+Tabelas principais:
+
+AERONAVE - id (PK) - matricula (UNIQUE) - numero_serie (UNIQUE)
+
+DIRETIVA_TECNICA - id (PK) - codigo_diretiva - fadt (UNIQUE) -
+objetivo - classe - categoria - tipo - natureza - ordem - especialidade
+
+DIRETIVA_AERONAVE - id (PK) - aeronave_id (FK) - diretiva_tecnica_id
+(FK) - status - data_aplicacao - data_status - ordem_aplicada -
+observacao
+
+Restrição: UNIQUE (aeronave_id, diretiva_tecnica_id)
+
+3.  ESTRATÉGIA DE IMPORTAÇÃO (CSV)
+
+Cada arquivo CSV representa uma única aeronave.
+
+Fluxo: 
+	1. Ler o CSV 
+	2. Criar ou obter aeronave (UPSERT) 
+	3. Para cada linha: 
+		- Criar ou obter diretiva (UPSERT via FADT) 
+		- Criar ou atualizar vínculo com aeronave (UPSERT)
+
+4.  UPSERT (POSTGRESQL)
+
+Utilizar: INSERT … ON CONFLICT
+
+Para evitar duplicidade e permitir atualização automática.
+
+5.  INTEGRIDADE
+
+-   FADT deve ser único
+-   Matrícula e número de série únicos
+-   Não permitir duplicidade de diretiva por aeronave
+
+6.  TRANSAÇÕES
+
+Todo processo de importação deve ocorrer dentro de uma transação: BEGIN;
+… COMMIT; Em caso de erro: ROLLBACK;
+
+7.  BOAS PRÁTICAS
+
+-   Utilizar tabela staging para importação de CSV
+-   Criar índices nas chaves estrangeiras
+-   Controlar histórico via campo ordem_aplicada
+-   Preparar estrutura para futura evolução (versionamento de diretivas)
+
+8.  EVOLUÇÕES FUTURAS
+
+-   Versionamento de diretivas (REV)
+-   Auditoria de alterações
+-   Dashboard de conformidade
+-   Alertas automáticos

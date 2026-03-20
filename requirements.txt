@@ -6,6 +6,8 @@ python-multipart
 jinja2
 python-jose[cryptography]
 passlib[bcrypt]
+bcrypt==3.2.2
+psycopg2-binary
 pandas
 openpyxl
 pytest

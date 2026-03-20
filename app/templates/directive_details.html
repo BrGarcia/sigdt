@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detalhes da Diretiva - SIGDT</title>
+    <link rel="icon" type="image/png" href="/static/img/favicon.png">
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -25,28 +26,30 @@
 
     <main class="container mx-auto mt-8 p-4">
         <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">{{ diretiva.diretiva_tecnica }}</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">{{ diretiva.diretiva.codigo_diretiva }}</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-                <p><strong>PN:</strong> {{ diretiva.pn }}</p>
-                <p><strong>Matrícula:</strong> {{ diretiva.matr }}</p>
-                <p><strong>Status:</strong> {{ diretiva.status }}</p>
-                <p><strong>Especialidade:</strong> {{ diretiva.especialidade or 'Não definida' }}</p>
+                <p><strong>FADT:</strong> {{ diretiva.diretiva.fadt }}</p>
+                <p><strong>Matrícula:</strong> {{ diretiva.aeronave.matricula }}</p>
+                <p><strong>N/S Aeronave:</strong> {{ diretiva.aeronave.numero_serie }}</p>
+                <p><strong>Status Atual:</strong> {{ diretiva.status }}</p>
+                <p><strong>Especialidade:</strong> {{ diretiva.diretiva.especialidade or 'Não definida' }}</p>
+                <p><strong>GUT Score:</strong> {{ diretiva.gut }}</p>
             </div>
 
             <div class="mt-6">
-                <h3 class="text-lg font-semibold text-gray-800">Objetivo</h3>
-                <p class="text-gray-700">{{ diretiva.objetivo }}</p>
+                <h3 class="text-lg font-semibold text-gray-800">Objetivo (Master)</h3>
+                <p class="text-gray-700">{{ diretiva.diretiva.objetivo }}</p>
             </div>
 
             <div class="mt-6">
-                <h3 class="text-lg font-semibold text-gray-800">Observações</h3>
-                <p class="text-gray-700 whitespace-pre-wrap">{{ diretiva.observacoes }}</p>
+                <h3 class="text-lg font-semibold text-gray-800">Observações (Aeronave {{ diretiva.aeronave.matricula }})</h3>
+                <p class="text-gray-700 whitespace-pre-wrap">{{ diretiva.observacao or 'Sem observações.' }}</p>
             </div>
 
             {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspector') %}
             <div class="mt-8 border-t pt-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Atualizar Diretiva</h3>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Atualizar Execução na Aeronave</h3>
                 <form hx-post="/directives/{{ diretiva.id }}" hx-target="body" hx-encoding="multipart/form-data" class="space-y-4">
                     <div>
                         <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
@@ -58,21 +61,21 @@
                         </select>
                     </div>
                     <div>
-                        <label for="especialidade" class="block text-sm font-medium text-gray-700">Especialidade Responsável</label>
+                        <label for="especialidade" class="block text-sm font-medium text-gray-700">Especialidade Responsável (Master)</label>
                         <select name="especialidade" id="especialidade" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500" {% if current_user.role != 'admin' %}disabled{% endif %}>
-                            <option value="" {% if not diretiva.especialidade %}selected{% endif %}>Não definida</option>
-                            <option value="ELETRONICA" {% if diretiva.especialidade == 'ELETRONICA' %}selected{% endif %}>ELETRONICA</option>
-                            <option value="ELETRICA" {% if diretiva.especialidade == 'ELETRICA' %}selected{% endif %}>ELETRICA</option>
-                            <option value="CÉLULA" {% if diretiva.especialidade == 'CÉLULA' %}selected{% endif %}>CÉLULA</option>
-                            <option value="HIDRAULICA" {% if diretiva.especialidade == 'HIDRAULICA' %}selected{% endif %}>HIDRAULICA</option>
-                            <option value="EQV" {% if diretiva.especialidade == 'EQV' %}selected{% endif %}>EQV</option>
+                            <option value="" {% if not diretiva.diretiva.especialidade %}selected{% endif %}>Não definida</option>
+                            <option value="ELETRONICA" {% if diretiva.diretiva.especialidade == 'ELETRONICA' %}selected{% endif %}>ELETRONICA</option>
+                            <option value="ELETRICA" {% if diretiva.diretiva.especialidade == 'ELETRICA' %}selected{% endif %}>ELETRICA</option>
+                            <option value="CÉLULA" {% if diretiva.diretiva.especialidade == 'CÉLULA' %}selected{% endif %}>CÉLULA</option>
+                            <option value="HIDRAULICA" {% if diretiva.diretiva.especialidade == 'HIDRAULICA' %}selected{% endif %}>HIDRAULICA</option>
+                            <option value="EQV" {% if diretiva.diretiva.especialidade == 'EQV' %}selected{% endif %}>EQV</option>
                         </select>
                         {% if current_user.role != 'admin' %}
-                        <input type="hidden" name="especialidade" value="{{ diretiva.especialidade or '' }}">
+                        <input type="hidden" name="especialidade" value="{{ diretiva.diretiva.especialidade or '' }}">
                         {% endif %}
                     </div>
                     <div>
-                        <label for="pdf_file" class="block text-sm font-medium text-gray-700">Anexar Documentação (PDF)</label>
+                        <label for="pdf_file" class="block text-sm font-medium text-gray-700">Anexar Comprovante (PDF)</label>
                         <input type="file" name="pdf_file" id="pdf_file" accept=".pdf" class="mt-1 block w-full text-sm text-gray-500
                             file:mr-4 file:py-2 file:px-4
                             file:rounded-md file:border-0
@@ -89,8 +92,8 @@
                         {% endif %}
                     </div>
                     <div>
-                        <label for="observacoes" class="block text-sm font-medium text-gray-700">Observações</label>
-                        <textarea name="observacoes" id="observacoes" rows="4" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">{{ diretiva.observacoes or '' }}</textarea>
+                        <label for="observacoes" class="block text-sm font-medium text-gray-700">Observações de Execução</label>
+                        <textarea name="observacoes" id="observacoes" rows="4" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">{{ diretiva.observacao or '' }}</textarea>
                     </div>
                     <button type="submit" class="bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-blue-800">Salvar Alterações</button>
                 </form>

@@ -1,22 +1,19 @@
 import pandas as pd
 from sqlmodel import Session, select
-from app.models import Diretiva
+from app.models import Diretiva, Aeronave, DiretivaAeronave
 from app.database import engine
 from io import StringIO
 import numpy as np
 
 def process_csv(csv_content: str):
     # The file uses ';' as separator
-    # We use engine='python' to better handle some edge cases with separators
     df = pd.read_csv(StringIO(csv_content), sep=';', skipinitialspace=True)
     
     # Clean column names (strip spaces)
     df.columns = [c.strip() for c in df.columns]
     
     def get_val(row, col_name):
-        # Try exact match first
         val = row.get(col_name)
-        # If it's a Series (due to duplicate column names not being mangled correctly or other issues)
         if isinstance(val, pd.Series):
             val = val.iloc[0]
         
@@ -26,58 +23,83 @@ def process_csv(csv_content: str):
 
     with Session(engine) as session:
         for i, row in df.iterrows():
-            # Extract unique keys
-            sn_cjm = get_val(row, 'SN CJM')
-            if not sn_cjm:
-                sn_cjm = get_val(row, 'SN')
+            # 1. Obter ou criar Aeronave (UPSERT via Matrícula)
+            matricula = get_val(row, 'MATR')
+            numero_serie = get_val(row, 'SN')
             
-            diretiva_tecnica = get_val(row, 'DIRETIVA TÉCNICA')
-            
-            if not sn_cjm or not diretiva_tecnica:
+            if not matricula or not numero_serie:
                 continue
+                
+            statement_aero = select(Aeronave).where(Aeronave.matricula == matricula)
+            aeronave = session.exec(statement_aero).first()
             
-            # Find if it already exists
-            statement = select(Diretiva).where(
-                Diretiva.sn_cjm == sn_cjm,
-                Diretiva.diretiva_tecnica == diretiva_tecnica
-            )
-            existing_diretiva = session.exec(statement).first()
+            if not aeronave:
+                aeronave = Aeronave(matricula=matricula, numero_serie=numero_serie)
+                session.add(aeronave)
+                session.flush() # Para obter o ID
+            else:
+                aeronave.numero_serie = numero_serie # Atualiza SN se necessário
+                session.add(aeronave)
+
+            # 2. Obter ou criar Diretiva Técnica (UPSERT via FADT)
+            fadt = get_val(row, 'FADT')
+            codigo_dt = get_val(row, 'DIRETIVA TÉCNICA')
             
-            # Map data
-            data = {
-                "pn": get_val(row, 'PN'),
-                "cff": get_val(row, 'CFF'),
-                "matr": get_val(row, 'MATR'),
-                "sn": get_val(row, 'SN'),
-                "unidade": get_val(row, 'UNIDADE'),
-                "status": get_val(row, 'STATUS'),
-                "pj": get_val(row, 'PJ'),
-                "sn_cjm": sn_cjm,
-                "diretiva_tecnica": diretiva_tecnica,
-                "fadt": get_val(row, 'FADT'),
-                "nat": get_val(row, 'NAT'),
-                "ordem": get_val(row, 'ORDEM'),
-                "cla": get_val(row, 'CLA'),
-                "cat": get_val(row, 'CAT'),
-                "tipo_incorporacao": get_val(row, 'TIPO INCORPORAÇÃO'),
-                "prazo_incorporacao": get_val(row, 'PRAZO INCORPORAÇÃO'),
-                "tarefa": get_val(row, 'TAREFA'),
-                "horas": get_val(row, 'HORAS'),
-                "rescisao": get_val(row, 'RESCISÃO'),
+            if not fadt or not codigo_dt:
+                continue
+                
+            statement_dt = select(Diretiva).where(Diretiva.fadt == fadt)
+            diretiva = session.exec(statement_dt).first()
+            
+            dt_data = {
+                "codigo_diretiva": codigo_dt,
+                "fadt": fadt,
                 "objetivo": get_val(row, 'OBJETIVO'),
+                "classe": get_val(row, 'CLA'),
+                "categoria": get_val(row, 'CAT'),
+                "tipo": get_val(row, 'TIPO INCORPORAÇÃO'),
+                "natureza": get_val(row, 'NAT'),
+                "ordem": get_val(row, 'ORDEM'),
             }
             
-            if existing_diretiva:
-                for key, value in data.items():
-                    setattr(existing_diretiva, key, value)
-                existing_diretiva.calculate_gut()
-                session.add(existing_diretiva)
+            if not diretiva:
+                diretiva = Diretiva(**dt_data)
+                session.add(diretiva)
+                session.flush()
             else:
-                new_diretiva = Diretiva(**data)
-                new_diretiva.tendencia = 3
-                new_diretiva.calculate_gut()
-                session.add(new_diretiva)
-        
+                for key, value in dt_data.items():
+                    setattr(diretiva, key, value)
+                session.add(diretiva)
+
+            # 3. Vincular Diretiva à Aeronave (UPSERT)
+            statement_link = select(DiretivaAeronave).where(
+                DiretivaAeronave.aeronave_id == aeronave.id,
+                DiretivaAeronave.diretiva_id == diretiva.id
+            )
+            link = session.exec(statement_link).first()
+            
+            link_data = {
+                "aeronave_id": aeronave.id,
+                "diretiva_id": diretiva.id,
+                "status": get_val(row, 'STATUS'),
+                "ordem_aplicada": get_val(row, 'ORDEM'), # Pode ser refinado conforme regra de negócio
+                "observacao": get_val(row, 'OBSERVAÇÕES') or get_val(row, 'PJ'), # Exemplo de mapeamento
+            }
+            
+            if not link:
+                link = DiretivaAeronave(**link_data)
+                link.tendencia = 3 # Valor padrão inicial
+                session.add(link)
+            else:
+                for key, value in link_data.items():
+                    setattr(link, key, value)
+                session.add(link)
+            
+            # Recalcular GUT para este vínculo
+            # Note: link.diretiva needs to be loaded or we use dt_data/diretiva object
+            link.diretiva = diretiva
+            link.calculate_gut()
+
         session.commit()
     
     return len(df)

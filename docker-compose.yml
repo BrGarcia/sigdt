@@ -1,12 +1,30 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+
   web:
     build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     container_name: sigdt_web_test
-    ports:
-      - "8000:8000"
     volumes:
       - .:/app
+    ports:
+      - "8000:8000"
     environment:
       - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://sigdt:sigdt_pass@db:5432/sigdt
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
