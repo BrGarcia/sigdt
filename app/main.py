@@ -52,11 +52,14 @@ def on_startup():
     init_db()
     with Session(engine) as session:
         admin_user = user_actions.get_user(session, "admin")
+        admin_pwd = os.getenv("ADMIN_PASSWORD", "admin")
         if not admin_user:
-            admin_pwd = os.getenv("ADMIN_PASSWORD", "admin")
             user_in = user_schemas.UserCreate(username="admin", email="admin@example.com", password=admin_pwd)
             admin_user = user_actions.create_user(session, user_in, role="admin")
         else:
+            # Update admin password if ENV is different from current hash (always updates to match ENV for safety)
+            from app.users import security as user_security
+            admin_user.hashed_password = user_security.get_password_hash(admin_pwd)
             admin_user.role = "admin"
             session.add(admin_user)
             session.commit()
