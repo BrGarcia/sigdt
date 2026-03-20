@@ -3,10 +3,8 @@ services:
     image: postgres:15-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-    environment:
-      - POSTGRES_USER=sigdt
-      - POSTGRES_PASSWORD=sigdt_pass
-      - POSTGRES_DB=sigdt
+    env_file:
+      - .env
     ports:
       - "5432:5432"
 
@@ -17,8 +15,8 @@ services:
       - .:/app
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql://sigdt:sigdt_pass@db:5432/sigdt
+    env_file:
+      - .env
     depends_on:
       - db
 

@@ -1,4 +1,4 @@
-<tr id="diretiva-{{ diretiva.id }}" class="hover:bg-gray-50 transition-colors">
+<tr id="diretiva-{{ diretiva.id }}" class="hover:bg-gray-50 transition-colors cursor-pointer" onclick="window.location.href='/directives/{{ diretiva.id }}'">
     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">{{ diretiva.sn_cjm }}</td>
     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700" title="{{ diretiva.objetivo }}">{{ diretiva.diretiva_tecnica }}</td>
     <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
@@ -18,10 +18,10 @@
         </span>
     </td>
     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        <form hx-post="/update-tendencia/{{ diretiva.id }}" hx-target="#diretiva-{{ diretiva.id }}" hx-swap="outerHTML" class="flex items-center space-x-2">
+        <form hx-post="/update-tendencia/{{ diretiva.id }}" hx-target="#diretiva-{{ diretiva.id }}" hx-swap="outerHTML" class="flex items-center space-x-2" onclick="event.stopPropagation()">
             <input type="number" name="tendencia" value="{{ diretiva.tendencia }}" min="1" max="5" 
                 class="w-16 border rounded px-1 py-1 focus:ring-2 focus:ring-blue-500"
-                onchange="this.form.dispatchEvent(new Event('submit'))">
+                onchange="this.form.dispatchEvent(new Event('submit', {'bubbles': true, 'cancelable': true}))">
         </form>
     </td>
     <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ diretiva.gut }}</td>

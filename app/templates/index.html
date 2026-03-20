@@ -6,6 +6,14 @@
     <title>SIGDT - Sistema de Gestão de Diretivas Técnicas</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        htmx.on('htmx:configRequest', function (evt) {
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                evt.detail.headers['Authorization'] = 'Bearer ' + token;
+            }
+        });
+    </script>
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
     <nav class="bg-blue-900 p-4 shadow-lg text-white">
@@ -13,6 +21,12 @@
             <h1 class="text-2xl font-bold tracking-tight">SIGDT</h1>
             <div class="space-x-4">
                 <a href="/" class="hover:text-blue-300 transition-colors">Dashboard</a>
+                {% if current_user %}
+                    <a href="/users/me" class="hover:text-blue-300 transition-colors">{{ current_user.username }}</a>
+                    <button id="logout-button" class="hover:text-red-300 transition-colors">Logout</button>
+                {% else %}
+                    <a href="/login" class="hover:text-blue-300 transition-colors">Login</a>
+                {% endif %}
             </div>
         </div>
     </nav>
@@ -31,6 +45,7 @@
                         hx-target="#directives-table">
                 </div>
 
+                {% if current_user and current_user.role == 'admin' %}
                 <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
                     <h3 class="text-lg font-semibold mb-4 text-gray-800">Upload CSV</h3>
                     <form action="/upload" method="post" enctype="multipart/form-data" class="space-y-4">
@@ -48,6 +63,7 @@
                         </div>
                     </form>
                 </div>
+                {% endif %}
             </div>
 
             <!-- Main Content: Table -->
@@ -57,7 +73,7 @@
                         <h2 class="text-xl font-bold text-gray-800">Matriz de Prioridade (GUT)</h2>
                         <span class="text-xs font-mono text-gray-500">Atualizado agora</span>
                     </div>
-                    <div id="directives-table" class="overflow-x-auto">
+                    <div id="directives-table" class="overflow-x-auto" hx-get="/directives" hx-trigger="load">
                         {% include 'partials/directives_table.html' %}
                     </div>
                 </div>
@@ -69,5 +85,13 @@
         &copy; 2026 SIGDT - Sistema de Gestão de Diretivas Técnicas. 
         Desenvolvido para alta performance em hardware limitado.
     </footer>
+    {% if current_user %}
+    <script>
+        document.getElementById('logout-button').addEventListener('click', function() {
+            localStorage.removeItem('access_token');
+            window.location.href = '/login';
+        });
+    </script>
+    {% endif %}
 </body>
 </html>

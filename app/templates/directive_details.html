@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes da Diretiva - SIGDT</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+    <nav class="bg-blue-900 p-4 shadow-lg text-white">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold tracking-tight">SIGDT</h1>
+            <div class="space-x-4">
+                <a href="/" class="hover:text-blue-300 transition-colors">Dashboard</a>
+                {% if current_user %}
+                    <a href="/users/me" class="hover:text-blue-300 transition-colors">{{ current_user.username }}</a>
+                    <button id="logout-button" class="hover:text-red-300 transition-colors">Logout</button>
+                {% else %}
+                    <a href="/login" class="hover:text-blue-300 transition-colors">Login</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto mt-8 p-4">
+        <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">{{ diretiva.diretiva_tecnica }}</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+                <p><strong>PN:</strong> {{ diretiva.pn }}</p>
+                <p><strong>SN/CJM:</strong> {{ diretiva.sn_cjm }}</p>
+                <p><strong>Status:</strong> {{ diretiva.status }}</p>
+                <p><strong>GUT:</strong> {{ diretiva.gut }}</p>
+            </div>
+
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-gray-800">Objetivo</h3>
+                <p class="text-gray-700">{{ diretiva.objetivo }}</p>
+            </div>
+
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-gray-800">Observações</h3>
+                <p class="text-gray-700 whitespace-pre-wrap">{{ diretiva.observacoes }}</p>
+            </div>
+
+            {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspector') %}
+            <div class="mt-8 border-t pt-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Atualizar Diretiva</h3>
+                <form hx-post="/directives/{{ diretiva.id }}" hx-target="body" class="space-y-4">
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+                        <select name="status" id="status" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="Pendente" {% if diretiva.status == 'Pendente' %}selected{% endif %}>Pendente</option>
+                            <option value="Em andamento" {% if diretiva.status == 'Em andamento' %}selected{% endif %}>Em andamento</option>
+                            <option value="Concluída" {% if diretiva.status == 'Concluída' %}selected{% endif %}>Concluída</option>
+                            <option value="Não aplicável" {% if diretiva.status == 'Não aplicável' %}selected{% endif %}>Não aplicável</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="observacoes" class="block text-sm font-medium text-gray-700">Observações</label>
+                        <textarea name="observacoes" id="observacoes" rows="4" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">{{ diretiva.observacoes or '' }}</textarea>
+                    </div>
+                    <button type="submit" class="bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-blue-800">Salvar Alterações</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    {% if current_user %}
+    <script>
+        document.getElementById('logout-button').addEventListener('click', function() {
+            localStorage.removeItem('access_token');
+            window.location.href = '/login';
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

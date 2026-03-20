@@ -1,5 +1,7 @@
 from typing import Optional
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Column
+from sqlalchemy import Text
+from datetime import datetime
 
 class Diretiva(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -23,6 +25,8 @@ class Diretiva(SQLModel, table=True):
     horas: Optional[str] = None
     rescisao: Optional[str] = None
     objetivo: Optional[str] = None
+    observacoes: Optional[str] = Field(default=None, sa_column=Column(Text))
+    ultima_modificacao: Optional[datetime] = Field(default_factory=datetime.utcnow, sa_column_kwargs={"onupdate": datetime.utcnow})
     
     # GUT Matrix fields
     tendencia: int = Field(default=3)
