@@ -14,5 +14,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # A porta será definida pela variável de ambiente PORT do Railway
-# Se não houver, o padrão é 8000
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Se não houver, o padrão é 8080 (Railway default)
+ENV PORT=8080
+EXPOSE 8080
+
+# Usamos sh -c para garantir que a expansão da variável de ambiente ocorra corretamente
+# Adicionamos --proxy-headers e --forwarded-allow-ips para lidar com o proxy do Railway
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --proxy-headers --forwarded-allow-ips='*'"]

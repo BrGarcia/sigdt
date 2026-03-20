@@ -104,12 +104,28 @@ async def logout(response: Response):
     response.delete_cookie("access_token")
     return {"status": "success"}
 
-@router.post("/", response_model=models.User, dependencies=[Depends(get_current_admin_user)])
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_session)):
-    db_user = actions.get_user(db, username=user.username)
+@router.post("/", dependencies=[Depends(get_current_admin_user)])
+def create_user(
+    request: Request,
+    username: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    especialidade: Optional[str] = Form(None),
+    db: Session = Depends(get_session)
+):
+    db_user = actions.get_user(db, username=username)
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
-    return actions.create_user(db=db, user=user, role="inspector")
+    
+    user_in = schemas.UserCreate(username=username, email=email, password=password, especialidade=especialidade)
+    new_user = actions.create_user(db=db, user=user_in, role="inspector")
+    
+    # Return HTML fragment for HTMX to append to the list
+    from app.main import templates
+    return templates.TemplateResponse("partials/user_row.html", {
+        "request": request,
+        "user": new_user
+    })
 
 @router.get("/me", response_model=models.User)
 async def read_users_me(current_user: models.User = Depends(get_current_user)):
