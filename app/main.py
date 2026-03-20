@@ -1,17 +1,17 @@
 import os
-from fastapi import FastAPI, Request, UploadFile, File, Depends, Form, HTTPException, status
+from fastapi import FastAPI, Request, UploadFile, File, Depends, Form, HTTPException, status, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 import io
 import pandas as pd
-from sqlmodel import Session, select, desc, or_
+from sqlmodel import Session, select, desc, or_, func
 from datetime import datetime
+from typing import List, Optional
 
 from app.database import init_db, get_session, engine
 from app.models import Diretiva, Aeronave, DiretivaAeronave
 from app.services.csv_service import process_csv
-from typing import Optional
 
 from app.users import routes as user_routes
 from app.users import actions as user_actions
@@ -23,6 +23,14 @@ app = FastAPI(title="SIGDT - Sistema de Gestão de Diretivas Técnicas")
 
 # Templates
 templates = Jinja2Templates(directory="app/templates")
+
+# Gatekeeper Password
+GATEKEEPER_PASSWORD = "asdf1234"
+
+def check_gatekeeper(request: Request):
+    if request.cookies.get("gatekeeper_access") == "granted":
+        return True
+    return False
 
 @app.on_event("startup")
 def on_startup():
@@ -45,35 +53,75 @@ if not os.path.exists("app/static"):
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(user_routes.router)
 
+@app.get("/gatekeeper", response_class=HTMLResponse)
+async def gatekeeper_page(request: Request):
+    return templates.TemplateResponse("gatekeeper.html", {"request": request})
+
+@app.post("/gatekeeper")
+async def gatekeeper_verify(password: str = Form(...)):
+    if password == GATEKEEPER_PASSWORD:
+        response = RedirectResponse(url="/", status_code=303)
+        response.set_cookie(key="gatekeeper_access", value="granted", max_age=86400 * 7) # 1 day * 7
+        return response
+    return RedirectResponse(url="/gatekeeper?error=1", status_code=303)
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
+    if not check_gatekeeper(request):
+        return RedirectResponse(url="/gatekeeper")
     return templates.TemplateResponse("login.html", {"request": request})
 
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request, session: Session = Depends(get_session), current_user: Optional[User] = Depends(get_optional_current_user)):
-    # Fetch first 100 directive links ordered by GUT desc
-    statement = select(DiretivaAeronave).order_by(desc(DiretivaAeronave.gut)).limit(100)
+async def read_root(
+    request: Request, 
+    session: Session = Depends(get_session), 
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    page: int = 1
+):
+    if not check_gatekeeper(request):
+        return RedirectResponse(url="/gatekeeper")
+    
+    per_page = 50
+    offset = (page - 1) * per_page
+    
+    # Count total
+    total_count = session.exec(select(func.count(DiretivaAeronave.id))).one()
+    total_pages = (total_count + per_page - 1) // per_page
+
+    statement = select(DiretivaAeronave).order_by(desc(DiretivaAeronave.gut)).offset(offset).limit(per_page)
     diretiva_links = session.exec(statement).all()
+    
     return templates.TemplateResponse("index.html", {
         "request": request, 
         "diretivas": diretiva_links,
-        "current_user": current_user
+        "current_user": current_user,
+        "page": page,
+        "total_pages": total_pages
     })
 
 @app.post("/upload", dependencies=[Depends(get_current_admin_user)])
-async def upload_csv(request: Request, file: UploadFile = File(...), session: Session = Depends(get_session)):
-    content = await file.read()
-    process_csv(content.decode('utf-8'))
+async def upload_csv(
+    request: Request, 
+    files: List[UploadFile] = File(...), 
+    session: Session = Depends(get_session)
+):
+    for file in files:
+        content = await file.read()
+        process_csv(content.decode('utf-8'))
     return RedirectResponse(url="/", status_code=303)
 
 @app.get("/directives", response_class=HTMLResponse)
 async def list_directives(
     request: Request, 
     search: Optional[str] = None, 
+    page: int = 1,
     session: Session = Depends(get_session)
 ):
+    per_page = 50
+    offset = (page - 1) * per_page
+    
     statement = select(DiretivaAeronave).join(Diretiva).join(Aeronave).order_by(desc(DiretivaAeronave.gut))
+    
     if search:
         search_filter = f"%{search}%"
         statement = statement.where(
@@ -84,10 +132,14 @@ async def list_directives(
             )
         )
     
-    diretiva_links = session.exec(statement.limit(100)).all()
+    # For simplicity in HTMX updates, we might not show pagination inside the partial yet
+    # but let's at least respect the limit
+    diretiva_links = session.exec(statement.offset(offset).limit(per_page)).all()
+    
     return templates.TemplateResponse("partials/directives_table.html", {
         "request": request, 
-        "diretivas": diretiva_links
+        "diretivas": diretiva_links,
+        "page": page
     })
 
 @app.get("/directives/{diretiva_id}", response_class=HTMLResponse)
@@ -97,7 +149,9 @@ async def get_directive_details(
     session: Session = Depends(get_session),
     current_user: Optional[User] = Depends(get_optional_current_user)
 ):
-    # diretiva_id here refers to the ID of DiretivaAeronave (the link)
+    if not check_gatekeeper(request):
+        return RedirectResponse(url="/gatekeeper")
+        
     link = session.get(DiretivaAeronave, diretiva_id)
     if not link:
         raise HTTPException(status_code=404, detail="Vínculo de Diretiva not found")
@@ -131,6 +185,7 @@ async def update_directive_details(
     # Update fields
     link.status = status
     link.observacao = observacoes
+    link.data_status = datetime.utcnow()
     
     # Admin can update master directive specialty
     if current_user.role == 'admin' and especialidade:
@@ -156,6 +211,8 @@ async def update_directive_details(
     session.commit()
     session.refresh(link)
     
+    # Return to details page (which will then allow user to go back to dashboard)
+    # Or return a script to trigger dashboard refresh if it was an HTMX request
     return templates.TemplateResponse("directive_details.html", {
         "request": request,
         "diretiva": link,
@@ -184,6 +241,8 @@ async def update_tendencia(
 
 @app.get("/users/manage", response_class=HTMLResponse, dependencies=[Depends(get_current_admin_user)])
 async def manage_users_page(request: Request, session: Session = Depends(get_session)):
+    if not check_gatekeeper(request):
+        return RedirectResponse(url="/gatekeeper")
     users = session.exec(select(User)).all()
     return templates.TemplateResponse("user_management.html", {"request": request, "users": users})
 
@@ -195,7 +254,7 @@ async def export_xlsx(session: Session = Depends(get_session)):
     data = []
     for link in links:
         data.append({
-            'PN': link.diretiva.pn if hasattr(link.diretiva, 'pn') else '', # Use logic if Master DT has PN or link has it
+            'PN': link.diretiva.pn if hasattr(link.diretiva, 'pn') else '', 
             'MATRICULA': link.aeronave.matricula,
             'NUMERO_SERIE': link.aeronave.numero_serie,
             'DIRETIVA_TECNICA': link.diretiva.codigo_diretiva,

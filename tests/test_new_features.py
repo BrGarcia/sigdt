@@ -6,8 +6,11 @@ from sqlmodel import Session, select
 from app.models import Diretiva, Aeronave, DiretivaAeronave
 from app.users.models import User
 from app.users import security
+import uuid
 
 client = TestClient(app)
+# Bypass Gatekeeper
+client.cookies.set("gatekeeper_access", "granted")
 
 # Ensure DB is initialized
 init_db()
@@ -33,13 +36,15 @@ def test_export_xlsx_requires_auth():
 
 def test_directive_details_has_especialidade():
     # We need a relational structure in the DB
+    # Use UUID to avoid unique constraint violations
+    uid = str(uuid.uuid4())[:8]
     from app.database import engine
     with Session(engine) as session:
-        a = Aeronave(matricula="TEST-MATR", numero_serie="TEST-SN")
+        a = Aeronave(matricula=f"MATR-{uid}", numero_serie=f"SN-{uid}")
         session.add(a)
         session.flush()
         
-        d = Diretiva(codigo_diretiva="DT-TEST", fadt="FADT-TEST", objetivo="OBJ-TEST")
+        d = Diretiva(codigo_diretiva=f"DT-{uid}", fadt=f"FADT-{uid}", objetivo="OBJ-TEST")
         session.add(d)
         session.flush()
         
@@ -55,19 +60,19 @@ def test_directive_details_has_especialidade():
 
 def test_directive_details_edit_fields_as_admin():
     # We need a relational structure and an admin user
+    uid = str(uuid.uuid4())[:8]
     from app.database import engine
     with Session(engine) as session:
         # Create admin if not exists
-        admin = session.exec(select(User).where(User.username == "admin_test_feat")).first()
-        if not admin:
-            admin = User(username="admin_test_feat", email="admin_test_feat@example.com", hashed_password="hashed", role="admin")
-            session.add(admin)
+        username = f"admin_{uid}"
+        admin = User(username=username, email=f"{username}@example.com", hashed_password="hashed", role="admin")
+        session.add(admin)
         
-        a = Aeronave(matricula="TEST-MATR-2", numero_serie="TEST-SN-2")
+        a = Aeronave(matricula=f"MATR-A-{uid}", numero_serie=f"SN-A-{uid}")
         session.add(a)
         session.flush()
         
-        d = Diretiva(codigo_diretiva="DT-TEST-2", fadt="FADT-TEST-2", objetivo="OBJ-TEST-2")
+        d = Diretiva(codigo_diretiva=f"DT-A-{uid}", fadt=f"FADT-A-{uid}", objetivo="OBJ-TEST-2")
         session.add(d)
         session.flush()
         
@@ -78,7 +83,7 @@ def test_directive_details_edit_fields_as_admin():
         link_id = link.id
 
     # Mock login
-    token = security.create_access_token(data={"sub": "admin_test_feat"})
+    token = security.create_access_token(data={"sub": username})
     client.cookies.set("access_token", token)
 
     response = client.get(f"/directives/{link_id}")

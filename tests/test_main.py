@@ -5,6 +5,8 @@ from app.database import init_db
 import os
 
 client = TestClient(app)
+# Bypass Gatekeeper
+client.cookies.set("gatekeeper_access", "granted")
 
 def test_read_main():
     response = client.get("/health")
