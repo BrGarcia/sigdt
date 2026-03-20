@@ -1,40 +1,33 @@
-# SIGDT - Sistema de Gestão de Diretivas Técnicas
+# SIGDT - Sistema de Gestão de Diretivas Técnicas (v1.0.0-pre)
 
-O **SIGDT** é uma aplicação web de alta performance desenvolvida para facilitar a gestão de diretivas técnicas (DT) de manutenção aeronáutica. O sistema substitui planilhas de Excel por uma interface reativa e moderna, priorizando a velocidade de acesso e o baixo consumo de recursos.
+O **SIGDT** é uma aplicação web de alta performance desenvolvida para a gestão de diretivas técnicas (DT) de manutenção aeronáutica. O sistema substitui planilhas complexas por uma interface relacional, permitindo o controle individualizado por aeronave enquanto mantém a padronização global das diretivas.
 
 ## 🚀 Arquitetura Técnica
-O sistema foi construído para ser "extremamente leve" e funcionar bem em hardware limitado:
+Focado em eficiência e hardware limitado:
+*   **Backend:** Python 3.11+ (FastAPI, SQLModel/SQLAlchemy).
+*   **Frontend:** HTMX (reatividade leve) e Tailwind CSS.
+*   **Banco de Dados:** PostgreSQL (Relacional - Aeronave <-> Diretiva).
+*   **Containerização:** Docker & Docker Compose.
 
-*   **Backend:** Python 3.11+ com **FastAPI** e **SQLModel**.
-*   **Frontend:** **HTMX** (para fragmentos de HTML reativos sem o peso de SPAs como React/Vue) e **Tailwind CSS**.
-*   **Banco de Dados:** SQLite (Desenvolvimento) / PostgreSQL (Produção).
-*   **Ingestão de Dados:** Lógica de **Upsert** inteligente para arquivos CSV seguindo o padrão `modelo.csv`.
+## 🛡️ Camadas de Segurança
+1.  **Gatekeeper:** Proteção de borda via senha global (`asdf1234`) para acesso ao site.
+2.  **RBAC:** Controle de acesso baseado em cargos (Admin, Inspetor, Usuário).
+3.  **Especialidades:** Inspetores só podem editar diretivas vinculadas à sua especialidade técnica.
 
 ## ⚙️ Principais Funcionalidades
-1.  **Matriz de Prioridade (GUT):** Cálculo automático baseado em Gravidade (CLA), Urgência (CAT) e Tendência (T).
-2.  **Busca Instantânea:** Filtre por SN, Matrícula ou Diretiva em tempo real.
-3.  **Gestão Dinâmica:** Ajuste fino da tendência individualmente por registro.
-4.  **Upload CSV:** Ingestão de novas bases de dados sem duplicidade.
+*   **Dashboard Relacional:** Visualização por aeronave com cálculo automático da Matriz GUT.
+*   **Gestão Global de DTs:** Menu exclusivo para editar normas que afetam toda a frota.
+*   **Anexos Técnicos:** Upload e visualização de comprovantes em PDF por aeronave.
+*   **Importação Inteligente:** Ingestão de múltiplos CSVs com lógica de Upsert (evita duplicidade).
+*   **Exportação:** Gerador de relatórios XLSX acessível para todos os níveis de usuário.
 
-## 🛠️ Como Iniciar
-
-### Com Docker
-Certifique-se de ter o Docker e Docker Compose instalados:
+## 🛠️ Como Iniciar (Docker)
 ```powershell
-docker-compose up --build
+docker-compose up --build -d
 ```
+Acesse: **[http://localhost:8000](http://localhost:8000)**
 
-### Manualmente (Python)
-1. Instale as dependências:
-   ```powershell
-   pip install -r requirements.txt
-   ```
-2. Inicie o servidor:
-   ```powershell
-   uvicorn app.main:app --reload
-   ```
-
-Acesse o sistema em: **[http://localhost:8000](http://localhost:8000)**
-
-## 📅 Próximos Passos
-Consulte o arquivo `NEXT.md` para ver o roteiro detalhado de melhorias (RBAC, Paginação Server-side, etc).
+## 📅 Roadmap v1.1.0
+*   Logs de Auditoria detalhados.
+*   Dashboards gráficos de conformidade.
+*   Notificações automáticas de DTs críticas.

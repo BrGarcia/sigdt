@@ -11,11 +11,14 @@
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
     <nav class="bg-blue-900 p-4 shadow-lg text-white">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold tracking-tight">SIGDT</h1>
-            <div class="space-x-4">
-                <a href="/" class="hover:text-blue-300 transition-colors">Dashboard</a>
-                <a href="/users/manage" class="hover:text-blue-300 transition-colors">Gerenciar Usuários</a>
-                <button id="logout-button" class="hover:text-red-300 transition-colors">Logout</button>
+            <a href="/" class="text-2xl font-bold tracking-tight hover:text-blue-300 transition-colors">SIGDT</a>
+            <div class="space-x-6 flex items-center">
+                <a href="/" class="text-sm font-medium hover:text-blue-300 transition-colors">Dashboard</a>
+                {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspector') %}
+                    <a href="/master-directives" class="text-sm font-medium hover:text-blue-300 transition-colors">Diretivas</a>
+                {% endif %}
+                <a href="/users/manage" class="text-sm font-medium hover:text-blue-300 transition-colors">Usuários</a>
+                <button id="logout-button" class="text-sm font-medium hover:text-red-300 transition-colors">Logout</button>
             </div>
         </div>
     </nav>

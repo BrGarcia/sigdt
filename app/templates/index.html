@@ -19,16 +19,19 @@
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
     <nav class="bg-blue-900 p-4 shadow-lg text-white">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold tracking-tight">SIGDT</h1>
-            <div class="space-x-4">
-                <a href="/" class="hover:text-blue-300 transition-colors">Dashboard</a>
+            <a href="/" class="text-2xl font-bold tracking-tight hover:text-blue-300 transition-colors">SIGDT</a>
+            <div class="space-x-6 flex items-center">
+                <a href="/" class="text-sm font-medium hover:text-blue-300 transition-colors">Dashboard</a>
+                {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspector') %}
+                    <a href="/master-directives" class="text-sm font-medium hover:text-blue-300 transition-colors">Diretivas</a>
+                {% endif %}
                 {% if current_user %}
                     {% if current_user.role == 'admin' %}
-                        <a href="/users/manage" class="hover:text-blue-300 transition-colors">Gerenciar Usuários</a>
+                        <a href="/users/manage" class="text-sm font-medium hover:text-blue-300 transition-colors">Usuários</a>
                     {% endif %}
-                    <button id="logout-button" class="hover:text-red-300 transition-colors">Logout</button>
+                    <button id="logout-button" class="text-sm font-medium hover:text-red-300 transition-colors">Logout</button>
                 {% else %}
-                    <a href="/login" class="hover:text-blue-300 transition-colors">Login</a>
+                    <a href="/login" class="text-sm font-medium hover:text-blue-300 transition-colors">Login</a>
                 {% endif %}
             </div>
         </div>
@@ -75,12 +78,10 @@
                     <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                         <h2 class="text-xl font-bold text-gray-800">Diretivas Técnicas</h2>
                         <div class="flex space-x-2">
-                            {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspector') %}
                             <a href="/export/xlsx" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                 Exportar XLSX
                             </a>
-                            {% endif %}
                         </div>
                     </div>
                     <div id="directives-table" class="overflow-x-auto">

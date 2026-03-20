@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Diretiva Global - SIGDT</title>
+    <link rel="icon" type="image/png" href="/static/img/favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+    <nav class="bg-blue-900 p-4 shadow-lg text-white">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold tracking-tight hover:text-blue-300 transition-colors">SIGDT</a>
+            <div class="space-x-6 flex items-center">
+                <a href="/" class="text-sm font-medium hover:text-blue-300 transition-colors">Dashboard</a>
+                <a href="/master-directives" class="text-sm font-medium hover:text-blue-300 transition-colors">Diretivas</a>
+                {% if current_user and current_user.role == 'admin' %}
+                    <a href="/users/manage" class="text-sm font-medium hover:text-blue-300 transition-colors">Usuários</a>
+                {% endif %}
+                <button id="logout-button" class="text-sm font-medium hover:text-red-300 transition-colors ml-4">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto mt-8 p-4">
+        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-sm p-8 border border-gray-200">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Edição Global: {{ directive.fadt }}</h2>
+            <p class="text-sm text-amber-600 mb-8 font-medium italic">⚠️ Atenção: Alterações nesta tela serão refletidas em TODAS as aeronaves vinculadas a esta diretiva.</p>
+
+            <form action="/master-directives/{{ directive.id }}" method="post" class="space-y-6">
+                <div>
+                    <label for="codigo_diretiva" class="block text-sm font-medium text-gray-700">Código da Diretiva</label>
+                    <input type="text" name="codigo_diretiva" id="codigo_diretiva" value="{{ directive.codigo_diretiva }}" required 
+                        class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div>
+                    <label for="objetivo" class="block text-sm font-medium text-gray-700">Objetivo / Descrição</label>
+                    <textarea name="objetivo" id="objetivo" rows="4" required 
+                        class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">{{ directive.objetivo }}</textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="classe" class="block text-sm font-medium text-gray-700">Classe (G)</label>
+                        <select name="classe" id="classe" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="M" {% if directive.classe == 'M' %}selected{% endif %}>M - Máxima (5)</option>
+                            <option value="R" {% if directive.classe == 'R' %}selected{% endif %}>R - Regular (4)</option>
+                            <option value="O" {% if directive.classe == 'O' %}selected{% endif %}>O - Opcional (2)</option>
+                            <option value="I" {% if directive.classe == 'I' %}selected{% endif %}>I - Informativa (1)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="categoria" class="block text-sm font-medium text-gray-700">Categoria (U)</label>
+                        <select name="categoria" id="categoria" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="I" {% if directive.categoria == 'I' %}selected{% endif %}>I - Imediata (5)</option>
+                            <option value="U" {% if directive.categoria == 'U' %}selected{% endif %}>U - Urgente (4)</option>
+                            <option value="R" {% if directive.categoria == 'R' %}selected{% endif %}>R - Rotina (2)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Especialidades Responsáveis</label>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-md border">
+                        {% set selected_specs = directive.especialidade.split(';') if directive.especialidade else [] %}
+                        {% for spec in ['ELETRÔNICA', 'ELÉTRICA', 'CÉLULA', 'HIDRÁULICA', 'MOTORES', 'EQV'] %}
+                        <div class="flex items-center">
+                            <input type="checkbox" name="especialidades" value="{{ spec }}" id="spec-{{ loop.index }}"
+                                {% if spec in selected_specs %}checked{% endif %}
+                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label for="spec-{{ loop.index }}" class="ml-2 block text-sm text-gray-900">{{ spec }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-4 pt-4">
+                    <a href="/master-directives" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300">Cancelar</a>
+                    <button type="submit" class="bg-blue-900 text-white py-2 px-6 rounded-md hover:bg-blue-800 font-bold">Salvar Alterações Globais</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        document.getElementById('logout-button').addEventListener('click', function() {
+            localStorage.removeItem('access_token');
+            document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
+            window.location.href = '/login';
+        });
+    </script>
+</body>
+</html>

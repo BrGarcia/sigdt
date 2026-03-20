@@ -1,0 +1,51 @@
+Relatório de Análise Estática de Segurança (SAST) - SIGDT
+============================================================
+
+1. Exposição de Dados Sensíveis (Sensitive Data Exposure / Hardcoded Secrets)
+-------------------------------------------------------------------------
+- Localização:
+  - `app/main.py` (Linha 28) - `GATEKEEPER_PASSWORD = "asdf1234"`
+  - `app/main.py` (Linhas 40-43) - Criação de `admin` com senha hardcoded `admin`.
+  - `app/users/security.py` (Linha 10) - `SECRET_KEY = "a_very_secret_key"`
+- Gravidade: Crítica
+- Justificativa: De acordo com o documento `doc/02_ESPECIFICACOES.md` (Seção 6), "Credenciais [...] são gerenciadas via variáveis de ambiente (.env) e não estão hardcoded no código." Manter senhas e chaves de criptografia secretas no código-fonte expõe o sistema a acessos indevidos severos se o código vazar ou for lido por usuários sem privilégio.
+
+2. Unrestricted File Upload (Possível RCE e Stored XSS via Upload Indevido)
+-------------------------------------------------------------------------
+- Localização: `app/main.py` (Linhas 196-204) na função `update_directive_details`
+- Gravidade: Alta
+- Justificativa: A funcionalidade de alteração/anexação de comprovante apenas pega a extensão do arquivo submetido (`os.path.splitext(pdf_file.filename)[1]`) e o salva na pasta pública `/static/uploads`. Embora o frontend (HTML) restrinja o `<input>` para `.pdf` e o `HTMX` submeta os arquivos, o backend não verifica o `MIME Type` e nem avalia se as assinaturas (magic numbers) são realmente de um arquivo PDF. O invasor pode interceptar o request e fazer o upload direto de um arquivo `.html`,  `.svg` escripitado ou até mesmo script binário. Se acessado por outra pessoa em `/static/uploads`, isso propicia um Stored XSS (Cross-Site Scripting), podendo roubar o token de acesso de um admin ou de outros inspetores.
+
+3. Armazenamento Inseguro de Token (XSS / Broken Authentication)
+-------------------------------------------------------------------------
+- Localização: `app/templates/directive_details.html` (Linha 138 - `localStorage.removeItem('access_token')`)
+- Gravidade: Alta
+- Justificativa: Manter o JWT (Token de Acesso) salvo no `localStorage` deixa as contas de sessão acessíveis aos scripts da página. Considerando a falha (2) de Stored XSS via upload de anexo, o token armazenado como string na API Web Storage será facilmente capturado pelos invasores. O ideal seria o token JWT ser mandado em um Cookie com atributos `HttpOnly` e `Secure`.
+
+4. Configuração Insegura de Cookie do Gatekeeper
+-------------------------------------------------------------------------
+- Localização: `app/main.py` (Linha 64) - `response.set_cookie(key="gatekeeper_access", value="granted", max_age=...)`
+- Gravidade: Média
+- Justificativa: O cookie define o acesso para toda a aplicação protegida. No entanto, faltam as flags de segurança `HttpOnly`, `Secure` (caso haja HTTPS) e `SameSite`. Sem essas sinalizações, esse cookie pode ser lido por javascript malicioso (XSS) ou abusado em ataques de CSRF se não for gerido com cuidado.
+
+5. CSV Injection (Formula Injection)
+-------------------------------------------------------------------------
+- Localização: 
+  - `app/main.py` (Linhas 279-315) - `export_xlsx`
+  - `app/services/csv_service.py` (Processamento primário, linha 10)
+- Gravidade: Média
+- Justificativa: Ao permitir entrada dos CSVs na aplicação web sem sanitização explícita nos campos de "OBSERVAÇÕES" (gerado pelo Inspetor na web ou por um Admin no CSV de entrada) e posteriormente permitir um endpoint `/export/xlsx`, campos de texto iniciados com `=`, `+`, `-`, ou `@` são abertos em clientes como o Microsoft Excel sem escapamento. Isso pode provocar execução forçada de comandos (RCE local) na rede do usuário que abriu o relatório.
+
+6. Potencial Negação de Serviço via Upload Sem Fim (DoS / Memory Exhaustion)
+-------------------------------------------------------------------------
+- Localização: 
+  - `app/main.py` (Linha 109) - `content = await file.read()`
+  - `app/services/csv_service.py` (Linhas 10-103)
+- Gravidade: Baixa
+- Justificativa: O endpoint de upload que invoca o `csv_service` carrega o arquivo completo na memória e os insere um a um usando `Session.flush()` e apenas dando `session.commit()` ao final do loop for inteiro no arquivo. Um arquivo CSV artificialmente enorme travará o servidor e consumirá toda a RAM devido às transações SQL não paginadas/salvas em lotes, causando pane nos Hardwares limitados descritos no escopo inicial do doc `02_ESPECIFICACOES.md`.
+
+7. Ausência de Rate Limiting (Ataque de Força Bruta)
+-------------------------------------------------------------------------
+- Localização: `app/main.py` (Rotas `POST /gatekeeper` e `POST /users/token`)
+- Gravidade: Baixa
+- Justificativa: Como o Gatekeeper possui uma senha compartilhada e os usuários (Admin/Inspector) possuem senhas dedicadas, a ausência de um bloqueio temporário após "N" tentativas incorretas pode permitir ataques continuados de quebra de senha. Embora mitigado pelo escopo mais limitado, é considerado falta de boa prática.

@@ -168,7 +168,7 @@ async def update_directive_details(
     diretiva_id: int,
     status: str = Form(...),
     observacoes: str = Form(...),
-    especialidade: Optional[str] = Form(None),
+    especialidades: List[str] = Form([]),
     pdf_file: Optional[UploadFile] = File(None),
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_inspector_user)
@@ -179,18 +179,14 @@ async def update_directive_details(
     
     # Check specialty permission for inspectors
     if current_user.role == 'inspector':
-        if link.diretiva.especialidade and current_user.especialidade != link.diretiva.especialidade:
+        allowed_specs = link.diretiva.especialidade.split(';') if link.diretiva.especialidade else []
+        if allowed_specs and current_user.especialidade not in allowed_specs:
             raise HTTPException(status_code=403, detail="Você não tem permissão para alterar diretivas desta especialidade.")
 
     # Update fields
     link.status = status
     link.observacao = observacoes
     link.data_status = datetime.utcnow()
-    
-    # Admin can update master directive specialty
-    if current_user.role == 'admin' and especialidade:
-        link.diretiva.especialidade = especialidade
-        session.add(link.diretiva)
 
     # Handle PDF upload
     if pdf_file and pdf_file.filename:
@@ -211,8 +207,42 @@ async def update_directive_details(
     session.commit()
     session.refresh(link)
     
-    # Return to details page (which will then allow user to go back to dashboard)
-    # Or return a script to trigger dashboard refresh if it was an HTMX request
+    return templates.TemplateResponse("directive_details.html", {
+        "request": request,
+        "diretiva": link,
+        "current_user": current_user
+    })
+
+@app.delete("/directives/{diretiva_id}/attachment", dependencies=[Depends(get_current_inspector_user)])
+async def delete_attachment(
+    request: Request,
+    diretiva_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_inspector_user)
+):
+    link = session.get(DiretivaAeronave, diretiva_id)
+    if not link:
+        raise HTTPException(status_code=404, detail="Vínculo de Diretiva not found")
+    
+    # Check specialty permission for inspectors
+    if current_user.role == 'inspector':
+        allowed_specs = link.diretiva.especialidade.split(';') if link.diretiva.especialidade else []
+        if allowed_specs and current_user.especialidade not in allowed_specs:
+            raise HTTPException(status_code=403, detail="Você não tem permissão para alterar diretivas desta especialidade.")
+
+    if link.pdf_path:
+        file_path = os.path.join("app/static/uploads", link.pdf_path)
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception:
+                pass # Continue even if file removal fails
+        
+        link.pdf_path = None
+        session.add(link)
+        session.commit()
+        session.refresh(link)
+    
     return templates.TemplateResponse("directive_details.html", {
         "request": request,
         "diretiva": link,
@@ -240,13 +270,13 @@ async def update_tendencia(
     })
 
 @app.get("/users/manage", response_class=HTMLResponse, dependencies=[Depends(get_current_admin_user)])
-async def manage_users_page(request: Request, session: Session = Depends(get_session)):
+async def manage_users_page(request: Request, session: Session = Depends(get_session), current_user: User = Depends(get_current_admin_user)):
     if not check_gatekeeper(request):
         return RedirectResponse(url="/gatekeeper")
     users = session.exec(select(User)).all()
-    return templates.TemplateResponse("user_management.html", {"request": request, "users": users})
+    return templates.TemplateResponse("user_management.html", {"request": request, "users": users, "current_user": current_user})
 
-@app.get("/export/xlsx", dependencies=[Depends(get_current_inspector_user)])
+@app.get("/export/xlsx")
 async def export_xlsx(session: Session = Depends(get_session)):
     statement = select(DiretivaAeronave).join(Diretiva).join(Aeronave)
     links = session.exec(statement).all()
@@ -283,6 +313,100 @@ async def export_xlsx(session: Session = Depends(get_session)):
         media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         headers={'Content-Disposition': 'attachment; filename="diretivas_tecnicas.xlsx"'}
     )
+
+@app.get("/master-directives", response_class=HTMLResponse, dependencies=[Depends(get_current_inspector_user)])
+async def list_master_directives(
+    request: Request, 
+    search: Optional[str] = None, 
+    page: int = 1,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_inspector_user)
+):
+    if not check_gatekeeper(request):
+        return RedirectResponse(url="/gatekeeper")
+        
+    per_page = 50
+    offset = (page - 1) * per_page
+    
+    statement = select(Diretiva).order_by(Diretiva.codigo_diretiva)
+    if search:
+        search_filter = f"%{search}%"
+        statement = statement.where(
+            or_(
+                Diretiva.codigo_diretiva.like(search_filter), 
+                Diretiva.fadt.like(search_filter),
+                Diretiva.objetivo.like(search_filter)
+            )
+        )
+    
+    # Count total for search or all
+    total_count = len(session.exec(statement).all())
+    total_pages = (total_count + per_page - 1) // per_page
+    
+    master_directives = session.exec(statement.offset(offset).limit(per_page)).all()
+    
+    return templates.TemplateResponse("master_directives.html", {
+        "request": request, 
+        "directives": master_directives,
+        "current_user": current_user,
+        "page": page,
+        "total_pages": total_pages,
+        "search": search
+    })
+
+@app.get("/master-directives/{id}", response_class=HTMLResponse, dependencies=[Depends(get_current_inspector_user)])
+async def get_master_directive_edit(
+    request: Request,
+    id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_inspector_user)
+):
+    master_dt = session.get(Diretiva, id)
+    if not master_dt:
+        raise HTTPException(status_code=404, detail="Diretiva Master not found")
+    
+    return templates.TemplateResponse("master_directive_edit.html", {
+        "request": request,
+        "directive": master_dt,
+        "current_user": current_user
+    })
+
+@app.post("/master-directives/{id}", response_class=HTMLResponse, dependencies=[Depends(get_current_inspector_user)])
+async def update_master_directive(
+    request: Request,
+    id: int,
+    codigo_diretiva: str = Form(...),
+    objetivo: str = Form(...),
+    classe: str = Form(...),
+    categoria: str = Form(...),
+    especialidades: List[str] = Form([]),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_inspector_user)
+):
+    master_dt = session.get(Diretiva, id)
+    if not master_dt:
+        raise HTTPException(status_code=404, detail="Diretiva Master not found")
+    
+    # Update master data
+    master_dt.codigo_diretiva = codigo_diretiva
+    master_dt.objetivo = objetivo
+    master_dt.classe = classe
+    master_dt.categoria = categoria
+    master_dt.especialidade = ";".join(especialidades)
+    
+    session.add(master_dt)
+    session.commit()
+    session.refresh(master_dt)
+    
+    # Recalculate GUT for all aircraft links using this master DT
+    statement = select(DiretivaAeronave).where(DiretivaAeronave.diretiva_id == master_dt.id)
+    links = session.exec(statement).all()
+    for link in links:
+        link.calculate_gut()
+        session.add(link)
+    session.commit()
+    
+    return RedirectResponse(url="/master-directives", status_code=303)
 
 @app.get("/health")
 async def health_check():

@@ -13,22 +13,32 @@
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
     <nav class="bg-blue-900 p-4 shadow-lg text-white">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold tracking-tight">SIGDT</h1>
-            <div class="space-x-4">
-                <a href="/" class="hover:text-blue-300 transition-colors">Dashboard</a>
-                {% if current_user %}
-                {% if current_user.role == 'admin' %}
-                <a href="/users/manage" class="hover:text-blue-300 transition-colors">Gerenciar Usuários</a>
+            <a href="/" class="text-2xl font-bold tracking-tight hover:text-blue-300 transition-colors">SIGDT</a>
+            <div class="space-x-6 flex items-center">
+                <a href="/" class="text-sm font-medium hover:text-blue-300 transition-colors">Dashboard</a>
+                {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspector') %}
+                    <a href="/master-directives" class="text-sm font-medium hover:text-blue-300 transition-colors">Diretivas</a>
                 {% endif %}
-                <button id="logout-button" class="hover:text-red-300 transition-colors">Logout</button>
+                {% if current_user %}
+                    {% if current_user.role == 'admin' %}
+                        <a href="/users/manage" class="text-sm font-medium hover:text-blue-300 transition-colors">Usuários</a>
+                    {% endif %}
+                    <button id="logout-button" class="text-sm font-medium hover:text-red-300 transition-colors">Logout</button>
                 {% else %}
-                <a href="/login" class="hover:text-blue-300 transition-colors">Login</a>
+                    <a href="/login" class="text-sm font-medium hover:text-blue-300 transition-colors">Login</a>
                 {% endif %}
             </div>
+
         </div>
     </nav>
 
     <main class="container mx-auto mt-8 p-4">
+        <div class="mb-4">
+            <button onclick="window.history.back()" class="flex items-center text-blue-900 hover:text-blue-700 font-medium transition-colors">
+                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                VOLTAR
+            </button>
+        </div>
         <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">{{ diretiva.diretiva.codigo_diretiva }}</h2>
 
@@ -54,15 +64,27 @@
             {% if diretiva.pdf_path %}
             <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
                 <h3 class="text-lg font-semibold text-blue-900 mb-2">Documentação Anexa</h3>
-                <a href="/static/uploads/{{ diretiva.pdf_path }}" target="_blank"
-                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                        </path>
-                    </svg>
-                    Visualizar Documento (PDF)
-                </a>
+                <div class="flex items-center space-x-4">
+                    <a href="/static/uploads/{{ diretiva.pdf_path }}" target="_blank"
+                        class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                        Visualizar Documento (PDF)
+                    </a>
+                    
+                    {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspector') %}
+                    <button hx-delete="/directives/{{ diretiva.id }}/attachment" 
+                            hx-confirm="Tem certeza que deseja remover permanentemente este anexo?"
+                            hx-target="body"
+                            class="inline-flex items-center px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 text-sm font-medium rounded-md transition-colors border border-red-200">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Remover Anexo
+                    </button>
+                    {% endif %}
+                </div>
             </div>
             {% endif %}
 
@@ -86,21 +108,10 @@
                         </select>
                     </div>
                     <div>
-                        <label for="especialidade" class="block text-sm font-medium text-gray-700">Especialidade
-                            Responsável (Master)</label>
-                        <select name="especialidade" id="especialidade" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500" {% if current_user.role != 'admin' %}disabled{% endif %}>
-                            <option value="" {% if not diretiva.diretiva.especialidade %}selected{% endif %}>Não definida</option>
-                            <option value="ELETRÔNICA" {% if diretiva.diretiva.especialidade == 'ELETRÔNICA' %}selected{% endif %}>ELETRÔNICA</option>
-                            <option value="ELÉTRICA" {% if diretiva.diretiva.especialidade == 'ELÉTRICA' %}selected{% endif %}>ELÉTRICA</option>
-                            <option value="CÉLULA" {% if diretiva.diretiva.especialidade == 'CÉLULA' %}selected{% endif %}>CÉLULA</option>
-                            <option value="HIDRÁULICA" {% if diretiva.diretiva.especialidade == 'HIDRÁULICA' %}selected{% endif %}>HIDRÁULICA</option>
-                            <option value="MOTORES" {% if diretiva.diretiva.especialidade == 'MOTORES' %}selected{% endif %}>MOTORES</option>
-                            <option value="EQV" {% if diretiva.diretiva.especialidade == 'EQV' %}selected{% endif %}>EQV</option>
-                        </select>
-
-                        {% if current_user.role != 'admin' %}
-                        <input type="hidden" name="especialidade" value="{{ diretiva.diretiva.especialidade or '' }}">
-                        {% endif %}
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Especialidades Responsáveis (Master)</label>
+                        <div class="p-2 bg-gray-100 rounded border text-sm text-gray-600">
+                            {{ diretiva.diretiva.especialidade.replace(';', ', ') if diretiva.diretiva.especialidade else 'Não definida' }}
+                        </div>
                     </div>
                     <div>
                         <label for="pdf_file" class="block text-sm font-medium text-gray-700">Alterar/Anexar Comprovante
