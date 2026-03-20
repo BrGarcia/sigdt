@@ -38,20 +38,24 @@
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('error-message');
 
-            const formData = new FormData();
-            formData.append('username', username);
-            formData.append('password', password);
+            const params = new URLSearchParams();
+            params.append('username', username);
+            params.append('password', password);
 
             try {
                 const response = await fetch('/users/token', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: params
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    // In a real app, you'd store this token securely
                     localStorage.setItem('access_token', data.access_token);
+                    // Set cookie for browser navigation
+                    document.cookie = `access_token=${data.access_token}; path=/; max-age=1800; SameSite=Lax`;
                     window.location.href = '/';
                 } else {
                     const errorData = await response.json();

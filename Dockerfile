@@ -1,19 +1,20 @@
-# Dockerfile
+# Usa uma imagem oficial e leve do Python 3.11
 FROM python:3.11-slim
 
+# Define o diretório de trabalho dentro do container
 WORKDIR /app
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
+# Copia o arquivo de requisitos primeiro para aproveitar o cache do Docker
 COPY requirements.txt .
+
+# Instala as dependências
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copia o restante do código do projeto para o container
 COPY . .
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Expõe a porta que o FastAPI vai rodar
+EXPOSE 8000
+
+# Comando para iniciar a aplicação
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

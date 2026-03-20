@@ -5,6 +5,7 @@ class UserCreate(BaseModel):
     username: str
     email: str
     password: str
+    especialidade: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str

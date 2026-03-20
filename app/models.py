@@ -31,6 +31,8 @@ class Diretiva(SQLModel, table=True):
     # GUT Matrix fields
     tendencia: int = Field(default=3)
     gut: float = Field(default=0.0)
+    especialidade: Optional[str] = Field(default=None, index=True) # ELETRONICA;ELETRICA;CÉLULA;HIDRAULICA;EQV
+    pdf_path: Optional[str] = None
 
     def calculate_gut(self):
         # Mappings based on ESPECIFICACOES.md

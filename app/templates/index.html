@@ -70,8 +70,16 @@
             <div class="lg:col-span-3">
                 <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
                     <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                        <h2 class="text-xl font-bold text-gray-800">Matriz de Prioridade (GUT)</h2>
-                        <span class="text-xs font-mono text-gray-500">Atualizado agora</span>
+                        <h2 class="text-xl font-bold text-gray-800">Diretivas Técnicas</h2>
+                        <div class="flex space-x-2">
+                            {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspector') %}
+                            <a href="/export/xlsx" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                Exportar XLSX
+                            </a>
+                            {% endif %}
+                            <span class="text-xs font-mono text-gray-500 self-center">Atualizado agora</span>
+                        </div>
                     </div>
                     <div id="directives-table" class="overflow-x-auto" hx-get="/directives" hx-trigger="load">
                         {% include 'partials/directives_table.html' %}
@@ -89,6 +97,7 @@
     <script>
         document.getElementById('logout-button').addEventListener('click', function() {
             localStorage.removeItem('access_token');
+            document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
             window.location.href = '/login';
         });
     </script>

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Form
+from fastapi import APIRouter, Depends, HTTPException, status, Form, Cookie
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 from app.database import get_session
@@ -12,14 +12,19 @@ router = APIRouter(
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token", auto_error=False)
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_session)):
-    if not token:
+def get_current_user(
+    token: Optional[str] = Depends(oauth2_scheme), 
+    access_token: Optional[str] = Cookie(None),
+    db: Session = Depends(get_session)
+):
+    actual_token = token or access_token
+    if not actual_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    username = security.decode_token(token)
+    username = security.decode_token(actual_token)
     if not username:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -35,10 +40,15 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         )
     return user
 
-def get_optional_current_user(token: Optional[str] = Depends(oauth2_scheme), db: Session = Depends(get_session)):
-    if not token:
+def get_optional_current_user(
+    token: Optional[str] = Depends(oauth2_scheme), 
+    access_token: Optional[str] = Cookie(None),
+    db: Session = Depends(get_session)
+):
+    actual_token = token or access_token
+    if not actual_token:
         return None
-    username = security.decode_token(token)
+    username = security.decode_token(actual_token)
     if not username:
         return None
     user = actions.get_user(db, username=username)

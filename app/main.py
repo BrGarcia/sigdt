@@ -2,7 +2,9 @@ import os
 from fastapi import FastAPI, Request, UploadFile, File, Depends, Form, HTTPException, status
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+import io
+import pandas as pd
 from sqlmodel import Session, select, desc, or_
 
 from app.database import init_db, get_session
@@ -25,7 +27,8 @@ templates = Jinja2Templates(directory="app/templates")
 def on_startup():
     os.makedirs("app/static", exist_ok=True)
     init_db()
-    with Session(get_session().keywords['generator']()) as session:
+    from app.database import engine
+    with Session(engine) as session:
         admin_user = user_actions.get_user(session, "admin")
         if not admin_user:
             user_in = user_schemas.UserCreate(username="admin", email="admin@example.com", password="admin")
@@ -110,15 +113,47 @@ async def update_directive_details(
     diretiva_id: int,
     status: str = Form(...),
     observacoes: str = Form(...),
+    especialidade: Optional[str] = Form(None),
+    pdf_file: Optional[UploadFile] = File(None),
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_inspector_user)
 ):
     diretiva = session.get(Diretiva, diretiva_id)
     if not diretiva:
         raise HTTPException(status_code=404, detail="Diretiva not found")
-        
+    
+    # Check specialty permission for inspectors
+    if current_user.role == 'inspector':
+        if diretiva.especialidade and current_user.especialidade != diretiva.especialidade:
+            # We can't easily return a nice error message with HTMX here without more setup, 
+            # but let's at least block it and maybe return the same page with a flash message if we had one.
+            # For now, let's just return the same page (it will look like it didn't save)
+            # Or raise a 403.
+            raise HTTPException(status_code=403, detail="Você não tem permissão para alterar diretivas desta especialidade.")
+
+    # Update fields
     diretiva.status = status
     diretiva.observacoes = observacoes
+    
+    # Admin can update specialty
+    if current_user.role == 'admin' and especialidade:
+        diretiva.especialidade = especialidade
+
+    # Handle PDF upload
+    if pdf_file and pdf_file.filename:
+        upload_dir = "app/static/uploads"
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        file_ext = os.path.splitext(pdf_file.filename)[1]
+        new_filename = f"diretiva_{diretiva_id}_{int(datetime.utcnow().timestamp())}{file_ext}"
+        file_path = os.path.join(upload_dir, new_filename)
+        
+        with open(file_path, "wb") as buffer:
+            content = await pdf_file.read()
+            buffer.write(content)
+        
+        diretiva.pdf_path = new_filename
+
     session.add(diretiva)
     session.commit()
     session.refresh(diretiva)
@@ -153,6 +188,50 @@ async def update_tendencia(
 async def manage_users_page(request: Request, session: Session = Depends(get_session)):
     users = session.exec(select(User)).all()
     return templates.TemplateResponse("user_management.html", {"request": request, "users": users})
+
+@app.get("/export/xlsx", dependencies=[Depends(get_current_inspector_user)])
+async def export_xlsx(session: Session = Depends(get_session)):
+    statement = select(Diretiva)
+    diretivas = session.exec(statement).all()
+    
+    # Convert to list of dicts for pandas
+    # Use d.dict() or similar to get all fields
+    data = []
+    for d in diretivas:
+        d_dict = d.dict()
+        # Ensure we only have relevant columns or rename them
+        data.append(d_dict)
+    
+    if not data:
+        df = pd.DataFrame(columns=['PN', 'CFF', 'MATRICULA', 'DIRETIVA_TECNICA', 'STATUS', 'CLA', 'CAT', 'OBJETIVO', 'ESPECIALIDADE'])
+    else:
+        df = pd.DataFrame(data)
+        # Select and rename columns for a cleaner output
+        cols_map = {
+            'pn': 'PN',
+            'cff': 'CFF',
+            'matr': 'MATRICULA',
+            'diretiva_tecnica': 'DIRETIVA_TECNICA',
+            'status': 'STATUS',
+            'cla': 'CLA',
+            'cat': 'CAT',
+            'objetivo': 'OBJETIVO',
+            'especialidade': 'ESPECIALIDADE',
+            'observacoes': 'OBSERVACOES'
+        }
+        df = df[list(cols_map.keys())].rename(columns=cols_map)
+    
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Diretivas')
+    
+    output.seek(0)
+    
+    return StreamingResponse(
+        output, 
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': 'attachment; filename="diretivas_tecnicas.xlsx"'}
+    )
 
 @app.get("/health")
 async def health_check():
