@@ -8,34 +8,66 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
-    <nav class="bg-blue-800 p-4 shadow-lg text-white">
+    <nav class="bg-blue-900 p-4 shadow-lg text-white">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold">SIGDT</h1>
-            <div>
-                <a href="/" class="hover:text-gray-300">Home</a>
+            <h1 class="text-2xl font-bold tracking-tight">SIGDT</h1>
+            <div class="space-x-4">
+                <a href="/" class="hover:text-blue-300 transition-colors">Dashboard</a>
             </div>
         </div>
     </nav>
 
-    <main class="container mx-auto mt-10 p-4">
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-3xl font-semibold mb-4 text-gray-800">{{ message }}</h2>
-            <p class="text-gray-600 mb-6">
-                Sistema de Gestão de Diretivas Técnicas (DT) para manutenção aeronáutica.
-            </p>
-            
-            <div id="content" class="mt-8">
-                <!-- HTMX will swap content here -->
-                <button hx-get="/health" hx-target="#health-status" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300">
-                    Verificar Saúde do Sistema
-                </button>
-                <div id="health-status" class="mt-4 text-sm font-mono text-gray-500"></div>
+    <main class="container mx-auto mt-8 p-4">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Sidebar: Search & Upload -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Filtros e Busca</h3>
+                    <input type="text" name="search" 
+                        placeholder="Buscar por SN, Matrícula ou DT..." 
+                        class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                        hx-get="/directives" 
+                        hx-trigger="keyup changed delay:500ms" 
+                        hx-target="#directives-table">
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Upload CSV</h3>
+                    <form action="/upload" method="post" enctype="multipart/form-data" class="space-y-4">
+                        <div class="flex items-center justify-center w-full">
+                            <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                                    </svg>
+                                    <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Clique para subir</span> ou arraste</p>
+                                    <p class="text-xs text-gray-500">CSV (modelo.csv)</p>
+                                </div>
+                                <input id="dropzone-file" type="file" name="file" class="hidden" onchange="this.form.submit()" />
+                            </label>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Main Content: Table -->
+            <div class="lg:col-span-3">
+                <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+                    <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                        <h2 class="text-xl font-bold text-gray-800">Matriz de Prioridade (GUT)</h2>
+                        <span class="text-xs font-mono text-gray-500">Atualizado agora</span>
+                    </div>
+                    <div id="directives-table" class="overflow-x-auto">
+                        {% include 'partials/directives_table.html' %}
+                    </div>
+                </div>
             </div>
         </div>
     </main>
 
     <footer class="mt-20 p-8 border-t border-gray-200 text-center text-gray-500 text-sm">
-        &copy; 2026 SIGDT - Sistema de Gestão de Diretivas Técnicas
+        &copy; 2026 SIGDT - Sistema de Gestão de Diretivas Técnicas. 
+        Desenvolvido para alta performance em hardware limitado.
     </footer>
 </body>
 </html>
