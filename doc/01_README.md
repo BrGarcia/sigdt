@@ -1,4 +1,4 @@
-# SIGDT - Sistema de Gestão de Diretivas Técnicas (v1.0.0-pre)
+# SIGDT - Sistema de Gestão de Diretivas Técnicas (v1.0.0)
 
 O **SIGDT** é uma aplicação web de alta performance desenvolvida para a gestão de diretivas técnicas (DT) de manutenção aeronáutica. O sistema substitui planilhas complexas por uma interface relacional, permitindo o controle individualizado por aeronave enquanto mantém a padronização global das diretivas.
 
