@@ -1,5 +1,8 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
-from fastapi import FastAPI, Request, UploadFile, File, Depends, Form, HTTPException, status, Response
+from fastapi import FastAPI, Request, UploadFile, File, Depends, Form, HTTPException, status, Response, Query
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
@@ -12,11 +15,12 @@ from typing import List, Optional
 from app.database import init_db, get_session, engine
 from app.models import Diretiva, Aeronave, DiretivaAeronave
 from app.services.csv_service import process_csv
+from app.services.pdf_parser import parse_at_pdf
 
 from app.users import routes as user_routes
 from app.users import actions as user_actions
 from app.users import schemas as user_schemas
-from app.users.routes import get_current_user, get_current_admin_user, get_optional_current_user, get_current_inspector_user
+from app.users.routes import get_current_user, get_current_admin_user, get_optional_current_user, get_current_inspetor_user
 from app.users.models import User
 
 app = FastAPI(title="SIGDT - Sistema de Gestão de Diretivas Técnicas")
@@ -24,8 +28,36 @@ app = FastAPI(title="SIGDT - Sistema de Gestão de Diretivas Técnicas")
 # Templates
 templates = Jinja2Templates(directory="app/templates")
 
+def format_especialidade(esp_string: str):
+    if not esp_string:
+        return []
+    mapping = {
+        'ELETRÔNICA': 'ELT', 'ELETRONICA': 'ELT', 'ELT': 'ELT',
+        'ELÉTRICA': 'ELE', 'ELETRICA': 'ELE', 'ELE': 'ELE',
+        'MOTORES': 'MOT', 'MOT': 'MOT',
+        'CÉLULA': 'CEL', 'CELULA': 'CEL', 'CEL': 'CEL',
+        'HIDRÁULICA': 'HID', 'HIDRAULICA': 'HID', 'HID': 'HID',
+        'EQUIPAMENTO DE VOO': 'EQV', 'EQV': 'EQV',
+        'TODAS': 'TODAS'
+    }
+    parts = [p.strip().upper() for p in esp_string.split(';')]
+    codes = set()
+    for p in parts:
+        if not p: continue
+        codes.add(mapping.get(p, p))
+            
+    core = {'ELT', 'ELE', 'MOT', 'CEL', 'HID', 'EQV'}
+    if core.issubset(codes) or 'TODAS' in codes:
+        return ['TODAS']
+        
+    return sorted(list(codes))
+
+templates.env.filters['format_especialidade'] = format_especialidade
+
 # Gatekeeper Password
-GATEKEEPER_PASSWORD = os.getenv("GATEKEEPER_PASSWORD", "asdf1234")
+GATEKEEPER_PASSWORD = os.getenv("GATEKEEPER_PASSWORD")
+if not GATEKEEPER_PASSWORD:
+    raise ValueError("Variável de ambiente GATEKEEPER_PASSWORD é obrigatória.")
 
 # Simple In-Memory Rate Limiter (No external DB needed)
 from collections import defaultdict
@@ -52,7 +84,9 @@ def on_startup():
     init_db()
     with Session(engine) as session:
         admin_user = user_actions.get_user(session, "admin")
-        admin_pwd = os.getenv("ADMIN_PASSWORD", "admin")
+        admin_pwd = os.getenv("ADMIN_PASSWORD")
+        if not admin_pwd:
+            raise ValueError("Variável de ambiente ADMIN_PASSWORD é obrigatória no startup.")
         if not admin_user:
             user_in = user_schemas.UserCreate(username="admin", email="admin@example.com", password=admin_pwd)
             admin_user = user_actions.create_user(session, user_in, role="admin")
@@ -89,7 +123,7 @@ async def gatekeeper_verify(request: Request, password: str = Form(...)):
             max_age=86400 * 7,
             httponly=True,
             samesite="lax",
-            secure=False # Should be True in production with HTTPS
+            secure=os.getenv("ENVIRONMENT") == "production"
         )
         return response
     return RedirectResponse(url="/gatekeeper?error=1", status_code=303)
@@ -128,6 +162,9 @@ async def read_root(
         "total_pages": total_pages
     })
 
+MAX_CSV_SIZE = 50 * 1024 * 1024  # 50MB
+REQUIRED_CSV_COLUMNS = {'MATR', 'SN', 'FADT', 'DIRETIVA TÉCNICA'}
+
 @app.post("/upload", dependencies=[Depends(get_current_admin_user)])
 async def upload_csv(
     request: Request, 
@@ -136,6 +173,21 @@ async def upload_csv(
 ):
     for file in files:
         content = await file.read()
+        # Item 8: Validar tamanho máximo
+        if len(content) > MAX_CSV_SIZE:
+            raise HTTPException(status_code=400, detail=f"Arquivo '{file.filename}' excede o limite de 50MB.")
+        # Item 8: Validar colunas obrigatórias
+        import io as _io
+        import pandas as _pd
+        try:
+            preview_df = _pd.read_csv(_io.StringIO(content.decode('utf-8')), sep=';', nrows=0)
+            missing = REQUIRED_CSV_COLUMNS - set(col.strip() for col in preview_df.columns)
+            if missing:
+                raise HTTPException(status_code=400, detail=f"CSV inválido. Colunas obrigatórias ausentes: {missing}")
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=400, detail=f"Não foi possível ler o arquivo '{file.filename}'. Verifique o formato CSV.")
         process_csv(content.decode('utf-8'))
     return RedirectResponse(url="/", status_code=303)
 
@@ -143,9 +195,14 @@ async def upload_csv(
 async def list_directives(
     request: Request, 
     search: Optional[str] = None, 
+    status: Optional[str] = None,
+    especialidade: List[str] = Query(None),
     page: int = 1,
     session: Session = Depends(get_session)
 ):
+    # Item 6: Proteger rota HTMX com gatekeeper
+    if not check_gatekeeper(request):
+        return HTMLResponse(status_code=403, content="<p>Acesso negado.</p>")
     per_page = 50
     offset = (page - 1) * per_page
     
@@ -160,6 +217,14 @@ async def list_directives(
                 Aeronave.matricula.like(search_filter)
             )
         )
+        
+    if status:
+        statement = statement.where(DiretivaAeronave.status == status)
+        
+    if especialidade:
+        conditions = [Diretiva.especialidade.like(f"%{esp}%") for esp in especialidade if esp]
+        if conditions:
+            statement = statement.where(or_(*conditions))
     
     # For simplicity in HTMX updates, we might not show pagination inside the partial yet
     # but let's at least respect the limit
@@ -191,7 +256,7 @@ async def get_directive_details(
         "current_user": current_user
     })
 
-@app.post("/directives/{diretiva_id}", response_class=HTMLResponse, dependencies=[Depends(get_current_inspector_user)])
+@app.post("/directives/{diretiva_id}", response_class=HTMLResponse, dependencies=[Depends(get_current_inspetor_user)])
 async def update_directive_details(
     request: Request,
     diretiva_id: int,
@@ -200,14 +265,14 @@ async def update_directive_details(
     especialidades: List[str] = Form([]),
     pdf_file: Optional[UploadFile] = File(None),
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_inspector_user)
+    current_user: User = Depends(get_current_inspetor_user)
 ):
     link = session.get(DiretivaAeronave, diretiva_id)
     if not link:
         raise HTTPException(status_code=404, detail="Vínculo de Diretiva not found")
     
-    # Check specialty permission for inspectors
-    if current_user.role == 'inspector':
+    # Check specialty permission for inspetors
+    if current_user.role == 'inspetor':
         allowed_specs = link.diretiva.especialidade.split(';') if link.diretiva.especialidade else []
         if allowed_specs and current_user.especialidade not in allowed_specs:
             raise HTTPException(status_code=403, detail="Você não tem permissão para alterar diretivas desta especialidade.")
@@ -215,7 +280,7 @@ async def update_directive_details(
     # Update fields
     link.status = status
     link.observacao = observacoes
-    link.data_status = datetime.utcnow()
+    link.data_status = datetime.now(datetime.timezone.utc)  # Item 13: datetime moderno
 
     # Handle PDF upload
     if pdf_file and pdf_file.filename:
@@ -232,14 +297,42 @@ async def update_directive_details(
         upload_dir = "app/static/uploads"
         os.makedirs(upload_dir, exist_ok=True)
         
-        file_ext = os.path.splitext(pdf_file.filename)[1]
-        new_filename = f"diretiva_link_{diretiva_id}_{int(datetime.utcnow().timestamp())}{file_ext}"
+        # Item 9: Forçar extensão .pdf independentemente do nome original
+        new_filename = f"diretiva_link_{diretiva_id}_{int(datetime.now(datetime.timezone.utc).timestamp())}.pdf"
         file_path = os.path.join(upload_dir, new_filename)
         
         with open(file_path, "wb") as buffer:
             buffer.write(content)
         
         link.pdf_path = new_filename
+
+        parsed_data = parse_at_pdf(file_path)
+        if "error" not in parsed_data:
+            extra_info = "\n--- DADOS EXTRAÍDOS AUTOMATICAMENTE (Ficha AT) ---\n"
+            
+            # Ordem prioritária de exibição na caixa de observação (só para ficar bonito)
+            important_keys = ["Ficha A.T.", "PN", "Nomenclatura", "SN", "Situação"]
+            for key in important_keys:
+                if key in parsed_data:
+                    extra_info += f"{key}: {parsed_data.pop(key)}\n"
+            
+            # Adicionar o restante dos dados meta
+            extra_info += "\n[DADOS ADICIONAIS]\n"
+            for k, v in list(parsed_data.items()):
+                if k not in ["Serviço Solicitado", "Parecer da Engenharia"]:
+                    extra_info += f"{k}: {v}\n"
+                    parsed_data.pop(k, None)
+
+            # E por fim colocar os blocos grandes
+            extra_info += f"\n[SERVIÇO SOLICITADO]\n{parsed_data.get('Serviço Solicitado', 'N/A')}\n"
+            extra_info += f"\n[PARECER DA ENGENHARIA]\n{parsed_data.get('Parecer da Engenharia', 'N/A')}\n"
+            extra_info += "--------------------------------------------------\n"
+
+            if link.observacao:
+                if "--- DADOS EXTRAÍDOS AUTOMATICAMENTE" not in link.observacao:
+                    link.observacao = link.observacao.rstrip() + "\n" + extra_info
+            else:
+                link.observacao = extra_info.strip()
 
     session.add(link)
     session.commit()
@@ -251,19 +344,19 @@ async def update_directive_details(
         "current_user": current_user
     })
 
-@app.delete("/directives/{diretiva_id}/attachment", dependencies=[Depends(get_current_inspector_user)])
+@app.delete("/directives/{diretiva_id}/attachment", dependencies=[Depends(get_current_inspetor_user)])
 async def delete_attachment(
     request: Request,
     diretiva_id: int,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_inspector_user)
+    current_user: User = Depends(get_current_inspetor_user)
 ):
     link = session.get(DiretivaAeronave, diretiva_id)
     if not link:
         raise HTTPException(status_code=404, detail="Vínculo de Diretiva not found")
     
-    # Check specialty permission for inspectors
-    if current_user.role == 'inspector':
+    # Check specialty permission for inspetors
+    if current_user.role == 'inspetor':
         allowed_specs = link.diretiva.especialidade.split(';') if link.diretiva.especialidade else []
         if allowed_specs and current_user.especialidade not in allowed_specs:
             raise HTTPException(status_code=403, detail="Você não tem permissão para alterar diretivas desta especialidade.")
@@ -314,7 +407,7 @@ async def manage_users_page(request: Request, session: Session = Depends(get_ses
     users = session.exec(select(User)).all()
     return templates.TemplateResponse("user_management.html", {"request": request, "users": users, "current_user": current_user})
 
-@app.get("/export/xlsx")
+@app.get("/export/xlsx", dependencies=[Depends(get_current_user)])
 async def export_xlsx(session: Session = Depends(get_session)):
     statement = select(DiretivaAeronave).join(Diretiva).join(Aeronave)
     links = session.exec(statement).all()
@@ -327,7 +420,7 @@ async def export_xlsx(session: Session = Depends(get_session)):
     data = []
     for link in links:
         data.append({
-            'PN': sanitize_formula(link.diretiva.pn if hasattr(link.diretiva, 'pn') else ''), 
+            # Item 11: Campo 'pn' removido do modelo na V2 — coluna removida do export
             'MATRICULA': sanitize_formula(link.aeronave.matricula),
             'NUMERO_SERIE': sanitize_formula(link.aeronave.numero_serie),
             'DIRETIVA_TECNICA': sanitize_formula(link.diretiva.codigo_diretiva),
@@ -357,13 +450,13 @@ async def export_xlsx(session: Session = Depends(get_session)):
         headers={'Content-Disposition': 'attachment; filename="diretivas_tecnicas.xlsx"'}
     )
 
-@app.get("/master-directives", response_class=HTMLResponse, dependencies=[Depends(get_current_inspector_user)])
+@app.get("/master-directives", response_class=HTMLResponse, dependencies=[Depends(get_current_inspetor_user)])
 async def list_master_directives(
     request: Request, 
     search: Optional[str] = None, 
     page: int = 1,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_inspector_user)
+    current_user: User = Depends(get_current_inspetor_user)
 ):
     if not check_gatekeeper(request):
         return RedirectResponse(url="/gatekeeper")
@@ -382,8 +475,9 @@ async def list_master_directives(
             )
         )
     
-    # Count total for search or all
-    total_count = len(session.exec(statement).all())
+    # Item 12: Contagem eficiente com subquery ao invés de carregar tudo na memória
+    count_statement = select(func.count()).select_from(statement.subquery())
+    total_count = session.exec(count_statement).one()
     total_pages = (total_count + per_page - 1) // per_page
     
     master_directives = session.exec(statement.offset(offset).limit(per_page)).all()
@@ -397,12 +491,12 @@ async def list_master_directives(
         "search": search
     })
 
-@app.get("/master-directives/{id}", response_class=HTMLResponse, dependencies=[Depends(get_current_inspector_user)])
+@app.get("/master-directives/{id}", response_class=HTMLResponse, dependencies=[Depends(get_current_inspetor_user)])
 async def get_master_directive_edit(
     request: Request,
     id: int,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_inspector_user)
+    current_user: User = Depends(get_current_inspetor_user)
 ):
     master_dt = session.get(Diretiva, id)
     if not master_dt:
@@ -414,7 +508,7 @@ async def get_master_directive_edit(
         "current_user": current_user
     })
 
-@app.post("/master-directives/{id}", response_class=HTMLResponse, dependencies=[Depends(get_current_inspector_user)])
+@app.post("/master-directives/{id}", response_class=HTMLResponse, dependencies=[Depends(get_current_inspetor_user)])
 async def update_master_directive(
     request: Request,
     id: int,
@@ -424,7 +518,7 @@ async def update_master_directive(
     categoria: str = Form(...),
     especialidades: List[str] = Form([]),
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_inspector_user)
+    current_user: User = Depends(get_current_inspetor_user)
 ):
     master_dt = session.get(Diretiva, id)
     if not master_dt:

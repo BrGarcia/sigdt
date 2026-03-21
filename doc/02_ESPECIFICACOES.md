@@ -26,7 +26,7 @@ O sistema agora opera com três níveis de acesso distintos:
     *   Visualizar os detalhes de uma diretiva específica.
     *   **Nenhuma** permissão de escrita ou modificação.
 
-### 3.2 Usuário Inspetor (`inspector`)
+### 3.2 Usuário Inspetor (`inspetor`)
 *   **Acesso:** Requer login.
 *   **Permissões:**
     *   Todas as permissões do Usuário Básico.

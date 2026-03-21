@@ -11,10 +11,7 @@ def sanitize_formula(value):
     return value
 
 def process_csv(csv_content: str):
-    # The file uses ';' as separator
     df = pd.read_csv(StringIO(csv_content), sep=';', skipinitialspace=True)
-    
-    # Clean column names (strip spaces)
     df.columns = [c.strip() for c in df.columns]
     
     def get_val(row, col_name):
@@ -26,41 +23,43 @@ def process_csv(csv_content: str):
             return None
         return sanitize_formula(str(val).strip())
 
-    BATCH_SIZE = 100
+    BATCH_SIZE = 500
     with Session(engine) as session:
+        # 1. Pre-Cache do Banco
+        todas_aeronaves = session.exec(select(Aeronave)).all()
+        aero_cache = {a.matricula: a for a in todas_aeronaves}
+
+        todas_diretivas = session.exec(select(Diretiva)).all()
+        dt_cache = {d.fadt: d for d in todas_diretivas}
+
+        todos_links = session.exec(select(DiretivaAeronave)).all()
+        link_cache = {(l.aeronave_id, l.diretiva_id): l for l in todos_links}
+
         for i, row in df.iterrows():
-            # ... (rest of the loop remains similar but uses batch commits)
-            # Implementation note: For v1.0.0-pre, let's keep the logic but ensure commit every BATCH_SIZE
-            
-            # (Keeping the original UPSERT logic but applying it within the session)
-            # 1. Obter ou criar Aeronave (UPSERT via Matrícula)
             matricula = get_val(row, 'MATR')
             numero_serie = get_val(row, 'SN')
             
             if not matricula or not numero_serie:
                 continue
-                
-            statement_aero = select(Aeronave).where(Aeronave.matricula == matricula)
-            aeronave = session.exec(statement_aero).first()
-            
+
+            # Aeronave Upsert (Cache)
+            aeronave = aero_cache.get(matricula)
             if not aeronave:
                 aeronave = Aeronave(matricula=matricula, numero_serie=numero_serie)
                 session.add(aeronave)
-                session.flush() 
+                session.flush() # Necessário flush para obter o ID
+                aero_cache[matricula] = aeronave
             else:
-                aeronave.numero_serie = numero_serie 
-                session.add(aeronave)
+                if aeronave.numero_serie != numero_serie:
+                    aeronave.numero_serie = numero_serie
+                    session.add(aeronave)
 
-            # 2. Obter ou criar Diretiva Técnica (UPSERT via FADT)
             fadt = get_val(row, 'FADT')
             codigo_dt = get_val(row, 'DIRETIVA TÉCNICA')
             
             if not fadt or not codigo_dt:
                 continue
-                
-            statement_dt = select(Diretiva).where(Diretiva.fadt == fadt)
-            diretiva = session.exec(statement_dt).first()
-            
+
             dt_data = {
                 "codigo_diretiva": codigo_dt,
                 "fadt": fadt,
@@ -70,41 +69,44 @@ def process_csv(csv_content: str):
                 "tipo": get_val(row, 'TIPO INCORPORAÇÃO'),
                 "natureza": get_val(row, 'NAT'),
                 "ordem": get_val(row, 'ORDEM'),
+                "especialidade": get_val(row, 'ESPECIALIDADE') # Adicionado para garantir suporte se houver
             }
-            
+
+            # Diretiva Upsert (Cache)
+            diretiva = dt_cache.get(fadt)
             if not diretiva:
                 diretiva = Diretiva(**dt_data)
                 session.add(diretiva)
                 session.flush()
+                dt_cache[fadt] = diretiva
             else:
                 for key, value in dt_data.items():
                     setattr(diretiva, key, value)
                 session.add(diretiva)
 
-            # 3. Vincular Diretiva à Aeronave (UPSERT)
-            statement_link = select(DiretivaAeronave).where(
-                DiretivaAeronave.aeronave_id == aeronave.id,
-                DiretivaAeronave.diretiva_id == diretiva.id
-            )
-            link = session.exec(statement_link).first()
+            # Link Upsert (Cache)
+            cache_key = (aeronave.id, diretiva.id)
+            link = link_cache.get(cache_key)
             
             link_data = {
                 "aeronave_id": aeronave.id,
                 "diretiva_id": diretiva.id,
-                "status": get_val(row, 'STATUS'),
+                "status": get_val(row, 'STATUS') or "Pendente",
                 "ordem_aplicada": get_val(row, 'ORDEM'),
                 "observacao": get_val(row, 'OBSERVAÇÕES') or get_val(row, 'PJ'),
             }
-            
+
             if not link:
                 link = DiretivaAeronave(**link_data)
-                link.tendencia = 3 
+                link.tendencia = 3
                 session.add(link)
+                link_cache[cache_key] = link
             else:
                 for key, value in link_data.items():
-                    setattr(link, key, value)
+                    if value is not None:
+                        setattr(link, key, value)
                 session.add(link)
-            
+
             link.diretiva = diretiva
             link.calculate_gut()
 

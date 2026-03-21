@@ -1,0 +1,153 @@
+                                                                                                                                     Pág.:   1  de 3
+                  COMANDO DA AERONÁUTICA                     Data: 16/09/2024
+                              BASE AÉREA DE NATAL                              Hora: 14:45:11
+                                        Ficha A.T.: 685000001229                                           ENG0054R v.10.6
+
+
+ Preenchido pelo Solicitante
+
+                                                  IDENTIFICAÇÃO DO SOLICITANTE
+
+  Cód. Assessoramento: 685000001229                                    Data Solicitacao: 12/09/2024            OM Origem: BANT
+
+  Solicitante: SO   SANTOS                          OM Destino: PAMALS
+
+ Chefe de Oficina:  CP   JONATAS                                           Situação: APROVADO               Data Autorização TENG:  12/09/2024
+
+
+                                                   IDENTIFICAÇÃO DO ITEM
+
+   PN: SYLC-52905-3                                               CFF: 05624-GE AVIATION SYSTEMS LLC
+
+   Nomenclatura: RUDDER TRIM ACTUATOR                             SN: 52
+
+   Sistema: 27-CONTROLES DE VÔO                                            Projeto: T2
+
+                                           CONJUNTO ONDE APLICADO
+
+   PN:                                                           CFF:
+
+   Nomenclatura:                                                      SN:                                                       Matricula:
+
+                                            NHA ONDE APLICADO
+
+   PN: ANV A-29                                                   CFF: 001JK-EMBRAER S.A.
+
+   Nomenclatura: AERONAVE, ASA FIXA, EMBRAER 314 (A-                SN: 31400019                                             Matricula: 5915
+                29 SUPER TUCANO)
+                                       PUBLICAÇÕES INFORMADAS PELO SOLICITANTE
+
+ Nº Publicação                              Fabricante                                               Título
+ AMM - 1651                       001JK-EMBRAER S.A.                      MANUAL DE MANUTENÇÃO - PARTE 2
+
+   Serviço Solicitado:
+AO CUMPRIMENTAR ESSA ENGENHARIA, RETOMAMOS O ASSUNTO TRATADO POR MEIO DO ASSESSORAMENTO TÉCNICO DE N º 685000001219: FALHA NA
+ATUAÇÃO DO COMPENSADOR DO LEME DA AERONAVE A-29 FAB 5915, REPORTADA NO DIA 09/09/2024.
+
+SOBRE O TEMA, INFORMAMOS QUE, NO DIA 12/09/2024, FORAM EXECUTADOS OS TESTES CONFORME SOLICITADOS NO PARECER DO A.T Nº 685000001219,
+SENDO OBTIDOS OS SEGUINTES RESULTADOS:
+
+- LIGAR A ARTU NO MODO AUTOMATICO;[LIGADA OK]
+- VERIFICAR DESAPARECIMENTO DA MSG MAN RUD T; [VERIFICADO OK].
+- COMANDAR O COMPENSADOR DE TRIMM ATÉ O FIM DE CURSO, ESTENDIDO E RETRAÍDO, VERIFICANDO O MOVIMENTO DA SUPERFÍCIE E INDICAÇÃO DE
+YAW TRIMM NO EICAS.[EXECUTADOS OS COMANDOS DO COMPENSADOR DE YAW, FUNCIONAMENTO E INDICAÇÕES DE ACORDO COM O ESPERADO].
+
+EM SEGUIDA, FOI VERIFICADA A OPERAÇÃO DO SISTEMA NO MODO MANUAL:
+
+- DESLIGAR A ARTU; [DESLIGADA OK]
+- LIGAR EM MODO MANUAL (SWITCH NA POSIÇÃO PWR);[POSICIONADA A SWITCH EM PWR]
+- VERIFICAR A MSG MAN RUD T ATIVA DURANTE TODA A EXECUÇÃO;[MSG MAN RUD T ATIVA NORMALMENTE DURANTE O TESTE];
+- COMANDAR O COMPENSADOR ATÉ FIM DE CURSO, ESTENDIDO E RETRAÍDO, ESTENDIDO E RETRAÍDO, VERIFICANDO O MOVIMENTO DA SUPERFÍCIE E
+INDICAÇÃO DE YAW TRIMM NO EICAS.[ EXECUTADOS OS COMANDOS DO COMPENSADOR DE YAW, FUNCIONAMENTO E INDICAÇÕES DE ACORDO COM O
+ESPERADO].
+
+ADICIONALMENTE, INFORMAMOS QUE, DE FORMA CONSERVADORA, FOI SUBSTITUÍDA A ARTU PN 251-118-012-012 S/N AB36656 PELA ARTU S/N AB36653 E
+EXECUTADOS OS TESTES, SENDO QUE, NOVAMENTE, O COMPORTAMENTO DO SISTEMA FOI SATISFATÓRIO. A ANV FOI LIBERADA PARA VOO DE
+EXPERIÊNCIA:
+
+DADOS DA ANV:
+TSN 5586:45 H
+POUSOS 7148
+PROX INSP CEL 5600 FH
+VENC. INSP CALENDÁRICA 27/04/2025
+
+
+  Amostra:
+                                                                                                                                     Pág.:   2  de 3
+                  COMANDO DA AERONÁUTICA                     Data: 16/09/2024
+                              BASE AÉREA DE NATAL                              Hora: 14:45:11
+                                        Ficha A.T.: 685000001229                                           ENG0054R v.10.6
+
+
+
+   Serviço Solicitado:
+AO CUMPRIMENTAR ESSA ENGENHARIA, RETOMAMOS O ASSUNTO TRATADO POR MEIO DO ASSESSORAMENTO TÉCNICO DE N º 685000001219: FALHA NA
+ATUAÇÃO DO COMPENSADOR DO LEME DA AERONAVE A-29 FAB 5915, REPORTADA NO DIA 09/09/2024.
+
+SOBRE O TEMA, INFORMAMOS QUE, NO DIA 12/09/2024, FORAM EXECUTADOS OS TESTES CONFORME SOLICITADOS NO PARECER DO A.T Nº 685000001219,
+SENDO OBTIDOS OS SEGUINTES RESULTADOS:
+
+- LIGAR A ARTU NO MODO AUTOMATICO;[LIGADA OK]
+- VERIFICAR DESAPARECIMENTO DA MSG MAN RUD T; [VERIFICADO OK].
+- COMANDAR O COMPENSADOR DE TRIMM ATÉ O FIM DE CURSO, ESTENDIDO E RETRAÍDO, VERIFICANDO O MOVIMENTO DA SUPERFÍCIE E INDICAÇÃO DE
+YAW TRIMM NO EICAS.[EXECUTADOS OS COMANDOS DO COMPENSADOR DE YAW, FUNCIONAMENTO E INDICAÇÕES DE ACORDO COM O ESPERADO].
+
+EM SEGUIDA, FOI VERIFICADA A OPERAÇÃO DO SISTEMA NO MODO MANUAL:
+
+- DESLIGAR A ARTU; [DESLIGADA OK]
+- LIGAR EM MODO MANUAL (SWITCH NA POSIÇÃO PWR);[POSICIONADA A SWITCH EM PWR]
+- VERIFICAR A MSG MAN RUD T ATIVA DURANTE TODA A EXECUÇÃO;[MSG MAN RUD T ATIVA NORMALMENTE DURANTE O TESTE];
+- COMANDAR O COMPENSADOR ATÉ FIM DE CURSO, ESTENDIDO E RETRAÍDO, ESTENDIDO E RETRAÍDO, VERIFICANDO O MOVIMENTO DA SUPERFÍCIE E
+INDICAÇÃO DE YAW TRIMM NO EICAS.[ EXECUTADOS OS COMANDOS DO COMPENSADOR DE YAW, FUNCIONAMENTO E INDICAÇÕES DE ACORDO COM O
+ESPERADO].
+
+ADICIONALMENTE, INFORMAMOS QUE, DE FORMA CONSERVADORA, FOI SUBSTITUÍDA A ARTU PN 251-118-012-012 S/N AB36656 PELA ARTU S/N AB36653 E
+EXECUTADOS OS TESTES, SENDO QUE, NOVAMENTE, O COMPORTAMENTO DO SISTEMA FOI SATISFATÓRIO. A ANV FOI LIBERADA PARA VOO DE
+EXPERIÊNCIA:
+
+DADOS DA ANV:
+TSN 5586:45 H
+POUSOS 7148
+PROX INSP CEL 5600 FH
+VENC. INSP CALENDÁRICA 27/04/2025
+
+
+  Anexo:
+                                                                                                                                    Pág.:   3  de 3
+                 COMANDO DA AERONÁUTICA                     Data: 16/09/2024
+                              BASE AÉREA DE NATAL                              Hora: 14:45:11
+                                        Ficha A.T.: 685000001229                                           ENG0054R v.10.6
+
+  Preenchido pela Engenharia
+   Parecer da Engenharia:
+
+ ESTA ENGENHARIA SOLICITA QUE SEJAM ENVIADOS OS DADOS DO VOO DE EXPERIÊNCIA, CASO SEJA REGISTRADA A INCIDÊNCIA DE PANE. NO
+ SURGIMENTO DE DISCREPÂNCIAS OU DÚVIDAS, FAVOR ENVIAR E-MAIL PARA TET2.PAMALS@FAB.MIL.BR OU ABRIR OUTRO ASSESSORAMENTO
+ TÉCNICO.
+
+
+
+
+                                                 LOCAIS PARA DISTRIBUIÇÃO
+
+ OM                    Setor                Qtde. Distribuída
+
+
+
+                                                      PARTICIPANTES
+
+Analista ou Responsável:                                                                  Data :  13/09/2024
+RENNAN ASSIS MATOS  / 1T
+
+Função: Analista                                                                                  Assinatura:
+
+
+Aprovo:                                                                                Data :
+  /
+
+Função: Chefe da Subdivisão                                                                     Assinatura:
+
+
+Homologo:                                                                              Data :
+  /
+                                                                                                   Assinatura:Função: Chefe da DT

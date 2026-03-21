@@ -65,7 +65,7 @@ def test_system_integrity():
     print("4. Testando restrição de especialidade (Inspetor)...")
     # Criar inspetor de ELÉTRICA
     with Session(engine) as session:
-        user_in = User(username=f"insp_{uid}", email=f"insp_{uid}@test.com", hashed_password="hashed", role="inspector", especialidade="ELÉTRICA")
+        user_in = User(username=f"insp_{uid}", email=f"insp_{uid}@test.com", hashed_password="hashed", role="inspetor", especialidade="ELÉTRICA")
         session.add(user_in)
         # Criar diretiva de ELETRÔNICA
         d_eletronica = session.exec(select(Diretiva).where(Diretiva.fadt == f"FADT-{uid}")).one()

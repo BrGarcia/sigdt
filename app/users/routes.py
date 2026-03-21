@@ -63,8 +63,8 @@ def get_current_admin_user(current_user: models.User = Depends(get_current_user)
         )
     return current_user
 
-def get_current_inspector_user(current_user: models.User = Depends(get_current_user)):
-    if current_user.role not in ["inspector", "admin"]:
+def get_current_inspetor_user(current_user: models.User = Depends(get_current_user)):
+    if current_user.role not in ["inspetor", "admin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user doesn't have enough privileges"
@@ -89,13 +89,14 @@ async def login_for_access_token(request: Request, response: Response, db: Sessi
     access_token = security.create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
+    import os
     response.set_cookie(
         key="access_token", 
         value=access_token, 
         httponly=True, 
         max_age=security.ACCESS_TOKEN_EXPIRE_MINUTES * 60, 
         samesite="lax",
-        secure=False # True in production
+        secure=os.getenv("ENVIRONMENT") == "production"
     )
     return {"status": "success"}
 
@@ -118,7 +119,7 @@ def create_user(
         raise HTTPException(status_code=400, detail="Username already registered")
     
     user_in = schemas.UserCreate(username=username, email=email, password=password, especialidade=especialidade)
-    new_user = actions.create_user(db=db, user=user_in, role="inspector")
+    new_user = actions.create_user(db=db, user=user_in, role="inspetor")
     
     # Return HTML fragment for HTMX to append to the list
     from app.main import templates
@@ -134,3 +135,15 @@ async def read_users_me(current_user: models.User = Depends(get_current_user)):
 @router.get("/all", response_model=List[models.User], dependencies=[Depends(get_current_admin_user)])
 def read_users(db: Session = Depends(get_session)):
     return db.exec(select(models.User)).all()
+
+@router.delete("/{user_id}", dependencies=[Depends(get_current_admin_user)])
+def delete_user(user_id: int, db: Session = Depends(get_session)):
+    user_to_delete = db.get(models.User, user_id)
+    if not user_to_delete:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user_to_delete.role == "admin":
+        raise HTTPException(status_code=400, detail="Cannot delete admin users")
+    
+    db.delete(user_to_delete)
+    db.commit()
+    return Response(status_code=200)

@@ -16,7 +16,7 @@
             <a href="/" class="text-2xl font-bold tracking-tight hover:text-blue-300 transition-colors">SIGDT</a>
             <div class="space-x-6 flex items-center">
                 <a href="/" class="text-sm font-medium hover:text-blue-300 transition-colors">Dashboard</a>
-                {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspector') %}
+                {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspetor') %}
                     <a href="/master-directives" class="text-sm font-medium hover:text-blue-300 transition-colors">Diretivas</a>
                 {% endif %}
                 {% if current_user %}
@@ -65,7 +65,7 @@
             <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
                 <h3 class="text-lg font-semibold text-blue-900 mb-2">Documentação Anexa</h3>
                 <div class="flex items-center space-x-4">
-                    <a href="/static/uploads/{{ diretiva.pdf_path }}" target="_blank"
+                    <button type="button" onclick="openPdfModal()"
                         class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -73,9 +73,9 @@
                             </path>
                         </svg>
                         Visualizar Documento (PDF)
-                    </a>
+                    </button>
                     
-                    {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspector') %}
+                    {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspetor') %}
                     <button hx-delete="/directives/{{ diretiva.id }}/attachment" 
                             hx-confirm="Tem certeza que deseja remover permanentemente este anexo?"
                             hx-target="body"
@@ -88,7 +88,7 @@
             </div>
             {% endif %}
 
-            {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspector') %}
+            {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspetor') %}
             <div class="mt-8 border-t pt-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Atualizar Execução na Aeronave</h3>
                 <form hx-post="/directives/{{ diretiva.id }}" hx-target="body" hx-encoding="multipart/form-data"
@@ -140,6 +140,23 @@
         </div>
     </main>
 
+    <!-- Modal PDF -->
+    {% if diretiva.pdf_path %}
+    <div id="pdf-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-75 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden">
+            <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="text-xl font-bold text-gray-800">Visualização de Documento Anexo</h3>
+                <button type="button" onclick="closePdfModal()" class="text-gray-500 hover:text-gray-800 transition-colors focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="flex-grow w-full relative">
+                <iframe src="/static/uploads/{{ diretiva.pdf_path }}" class="absolute inset-0 w-full h-full border-0"></iframe>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     {% if current_user %}
     <script>
         function validateFileSize(input) {
@@ -171,6 +188,18 @@
         });
     </script>
     {% endif %}
+
+    <script>
+        function openPdfModal() {
+            document.getElementById('pdf-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePdfModal() {
+            document.getElementById('pdf-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+    </script>
 </body>
 
 </html>

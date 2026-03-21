@@ -1,7 +1,7 @@
 from typing import Optional, List
 from sqlmodel import SQLModel, Field, Column, Relationship
 from sqlalchemy import Text, UniqueConstraint
-from datetime import datetime
+from datetime import datetime, timezone
 
 class Aeronave(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -35,7 +35,7 @@ class DiretivaAeronave(SQLModel, table=True):
     
     status: Optional[str] = Field(default="Pendente")
     data_aplicacao: Optional[datetime] = None
-    data_status: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    data_status: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
     ordem_aplicada: Optional[str] = None
     observacao: Optional[str] = Field(default=None, sa_column=Column(Text))
     pdf_path: Optional[str] = None
