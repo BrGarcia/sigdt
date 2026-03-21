@@ -1,8 +1,13 @@
-# Sugestões para Próximos Passos: Projeto SIGDT
+# Sugestões para Próximos Passos: Projeto SIGDT (v2.0.0)
 
-O sistema atingiu o estado de MVP (v1.0.0-pre). Abaixo estão as recomendações para as próximas versões:
+O sistema atingiu o estado de MVP estável (v1.0.0). Agora, o foco é na automação e inteligência de dados.
 
-## 1. Auditoria e Conformidade (Alta Prioridade)
+## 1. Automação de Dados (Foco v2.0)
+*   **AT Parser Inteligente:** Finalizar a integração do extrator de PDFs para preencher automaticamente os registros de manutenção.
+*   **Deduplicação Inteligente:** Refinar o algoritmo para garantir que textos repetidos em PDFs multipáginas não sujem o banco de dados.
+*   **Migrações de Banco (Alembic):** Configurar migrações para suportar os novos campos de Assessoramento Técnico sem perda de dados históricos.
+
+## 2. Auditoria e Conformidade (Alta Prioridade)
 *   **Logs de Auditoria:** Registrar o histórico de quem alterou o status de uma diretiva e quando.
 *   **Assinatura Digital:** Implementar uma confirmação de senha ou assinatura digital simples ao concluir uma DT.
 *   **Dashboard de Conformidade:** Gráficos mostrando a porcentagem de diretivas concluídas por aeronave.
