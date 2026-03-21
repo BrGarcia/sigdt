@@ -1,3 +1,6 @@
+ALTERACOES NA VERSAO 3.0.0 (EM DESENVOLVIMENTO):
+	[PLANEJAMENTO] ...
+
 ALTERACOES NA VERSAO 2.0.0 (CONCLUÍDO):
 	[NOVA FUNCIONALIDADE] AT PARSER:
 		Implementação da biblioteca PyMuPDF para ler automaticamente arquivos PDF de Assessoramento Técnico.

@@ -1,4 +1,4 @@
-# SIGDT - Sistema de Gestão de Diretivas Técnicas (v2.0.0-dev)
+# SIGDT - Sistema de Gestão de Diretivas Técnicas (v3.0.0-dev)
 
 O **SIGDT** é uma aplicação web de alta performance desenvolvida para a gestão de diretivas técnicas (DT) de manutenção aeronáutica. O sistema substitui planilhas complexas por uma interface relacional, permitindo o controle individualizado por aeronave enquanto mantém a padronização global das diretivas.
 
@@ -30,8 +30,12 @@ docker-compose up --build -d
 ```
 Acesse: **[http://localhost:8000](http://localhost:8000)**
 
-## 📅 Roadmap Futuro (v3.0.0+)
-*   Proteção Global Anti-CSRF.
-*   Rate Limiter de Logins com persistência.
-*   Logs de Auditoria estruturados.
-*   Dashboards gráficos de conformidade.
+## 📅 Roadmap V3.0.0 (Em Desenvolvimento)
+*   **Segurança:** Implementação de proteção Anti-CSRF global.
+*   **Persistência:** Rate Limiting robusto integrado ao banco de dados.
+*   **Monitoramento:** Logging estruturado e auditoria de ações.
+*   **Dashboards:** Visualização gráfica da conformidade da frota.
+
+## 📅 Roadmap Futuro (v4.0.0+)
+*   Multi-Ambientes (Hangar X / Y).
+*   WebSocket Real-Time Locks.
