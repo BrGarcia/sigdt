@@ -3,6 +3,14 @@ ALTERACOES NA VERSAO 2.0.0 (EM DESENVOLVIMENTO):
 		Implementação da biblioteca PyMuPDF para ler automaticamente arquivos PDF de Assessoramento Técnico.
 		Extração automática dos campos: Ficha A.T., Serviço Solicitado e Parecer da Engenharia.
 		Exibição desses textos diretamente na página de Detalhamento da Diretiva para facilitar a consulta rápida sem abrir o anexo.
+	[DASHBOARD UI] Coluna ESPECIALIDADE:
+		Exibir uma nova coluna com pequenos boxes (badges) coloridos contendo os trigramas:
+		- ELT (Eletrônica)
+		- ELE (Elétrica)
+		- CEL (Célula)
+		- MOT (Motores)
+		- EQV (Equipamento de Voo)
+		- TODAS (Caso a DT se aplique a todas as especialidades)
 	[BANCO DE DADOS] Atualização da tabela DiretivaAeronave para incluir campos de texto para os dados extraídos (at_numero, at_servico, at_parecer).
 
 ALTERACOES NA TELA DASHBOARD (CONCLUÍDO v1.0):
