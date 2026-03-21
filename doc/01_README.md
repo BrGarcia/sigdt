@@ -8,10 +8,11 @@ Focado em eficiência e hardware limitado:
 *   **Frontend:** HTMX (reatividade leve) e Tailwind CSS.
 *   **Banco de Dados:** PostgreSQL (Relacional - Aeronave <-> Diretiva).
 *   **Containerização:** Docker & Docker Compose.
-*   **Processamento de Documentos:** PyMuPDF para extração inteligente de dados.
+*   **Processamento de Documentos:** PyMuPDF para extração inteligente de dados em formulários AT.
+*   **Migrações DB:** Alembic para versionamento estrutural.
 
 ## 🛡️ Camadas de Segurança
-1.  **Gatekeeper:** Proteção de borda via senha global (`asdf1234`) para acesso ao site.
+1.  **Gatekeeper:** Proteção de borda via senha global configurada no `.env` do servidor.
 2.  **RBAC:** Controle de acesso baseado em cargos (Admin, Inspetor, Usuário).
 3.  **Especialidades:** Inspetores só podem editar diretivas vinculadas à sua especialidade técnica.
 
@@ -29,8 +30,8 @@ docker-compose up --build -d
 ```
 Acesse: **[http://localhost:8000](http://localhost:8000)**
 
-## 📅 Roadmap v2.0.0
-*   Extração Automática de Dados de PDFs (AT Parser).
-*   Logs de Auditoria detalhados.
+## 📅 Roadmap Futuro (v3.0.0+)
+*   Proteção Global Anti-CSRF.
+*   Rate Limiter de Logins com persistência.
+*   Logs de Auditoria estruturados.
 *   Dashboards gráficos de conformidade.
-*   Notificações automáticas de DTs críticas.

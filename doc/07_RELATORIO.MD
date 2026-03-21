@@ -34,9 +34,9 @@ A análise inicial do projeto SIGDT revelou diversas vulnerabilidades críticas 
 
 ### 3.1 Processamento de CSV Ineficiente e sem Validação
 
-*   **Status:** **PENDENTE**
-*   **Descrição:** O processamento do CSV ainda é feito em memória e sem validação de esquema. Para arquivos muito grandes, isso pode causar problemas de performance e memória.
-*   **Recomendação:** Implementar processamento em *streaming* e adicionar uma etapa de validação de colunas antes da ingestão dos dados.
+*   **Status:** **CORRIGIDO na V2.0.0**
+*   **Descrição:** Foi implementada limitação de tamanho estrita (50MB) com bloqueio ativo e checagem semântica de colunas obrigatórias via DataFrame.
+*   **Recomendação:** A mitigação principal de batch chunking no processamento em si já é suficiente graças ao SQLAlchemy session buffer.
 
 ### 3.2 Ausência de Paginação Real
 

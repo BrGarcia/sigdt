@@ -8,8 +8,8 @@ A versão 2.0 introduz um sistema de controle de acesso baseado em três níveis
 ---
 
 ## 2. Arquitetura Técnica
-*   **Backend:** Python 3.11+ com **FastAPI**.
-*   **Frontend:** **HTMX** com **Tailwind CSS**. A renderização é feita no lado do servidor para garantir performance máxima em clientes com hardware limitado.
+*   **Backend:** Python 3.11+ com **FastAPI** e migrações **Alembic**.
+*   **Frontend:** **HTMX** com **Tailwind CSS**. Renderização server-side otimizada com formatação em Grids Responsivos e modais dinâmicos.
 *   **Banco de Dados:** PostgreSQL (Produção) e SQLite (Desenvolvimento).
 *   **Containerização:** Docker e Docker Compose.
 
@@ -54,9 +54,10 @@ O sistema agora opera com três níveis de acesso distintos:
 *   Busca global instantânea por SN, Matrícula ou Diretiva.
 *   Toda a tabela é "clicável", levando à página de detalhes da diretiva.
 
-### 4.3 Edição e Detalhes (Inspetor/Admin)
-*   Página de detalhes para cada diretiva.
-*   Formulário para que inspetores e administradores atualizem o **status** e as **observações**.
+### 4.3 Edição, Detalhes e PDF (Inspetor/Admin)
+*   **Modal de Visualização:** Comprovantes AT em PDF abrem em um Modal responsivo sem sair da página, mantendo os dados da DT lado a lado.
+*   **AT Parser Automático:** O envio de Comprovantes em PDF aciona uma rotina inteligente que extrai "Ficha AT", "Serviço Solicitado", "Parecer", "Classe" e "Categoria", preenchendo as observações da aeronave automaticamente.
+*   Formulário para que inspetores e administradores atualizem o **status**.
 *   Formulário para que administradores atualizem a **tendência**.
 
 ### 4.4 Gerenciamento de Usuários (Admin)

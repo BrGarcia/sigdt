@@ -32,5 +32,13 @@ STATUS DA REVISÃO (v1.0.0-pre)
    - STATUS: REPARADO ✅
    - Ação: Implementado limitador de tentativas em memória para rotas de Gatekeeper e Login.
 
+8. Acesso Indevido a Rota de Exportação Planilhas (Access Control)
+   - STATUS: REPARADO ✅
+   - Ação: Limitação strict inserida. Ninguém além de contas logadas pode rodar a função '/export'.
+
+9. Validação Insegura de Extensão de Arquivo (PDF)
+   - STATUS: REPARADO ✅
+   - Ação: Sistema força nomeação estritamente em .pdf reescrevendo totalmente o nome do arquivo.
+
 ---
-CONCLUSÃO: Todas as vulnerabilidades críticas, altas e médias identificadas no relatório original foram mitigadas. O sistema está significativamente mais robusto para operação online.
+CONCLUSÃO: Todas as grandes vulnerabilidades (críticas e altas) do framework inicial e da respectiva Auditoria V2.0.0 foram inteiramente mitigadas. O servidor suportará tráfego online.

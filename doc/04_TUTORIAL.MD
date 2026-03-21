@@ -5,29 +5,30 @@ Este documento orienta sobre o uso das funcionalidades do sistema SIGDT.
 ---
 
 ## 🔐 1. Acesso Inicial (Gatekeeper)
-Para proteger os dados, o primeiro acesso ao site requer uma senha global.
-*   **Senha:** `asdf1234`
-*   Esta camada protege o site mesmo antes do login individual.
+Para proteger os dados, o primeiro acesso ao site requer uma senha global definida no contêiner ou no arquivo `.env` seguro.
+*   Esta camada protege o site mesmo antes do login individual e impede vazamentos.
 
 ---
 
 ## 📊 2. Dashboard e Navegação
 Ao entrar, você verá a lista de diretivas vinculadas às aeronaves.
+*   **Filtros Inteligentes:** Clicando nos dropdowns (apenas usuários logados), é possível filtrar e sobrepor Especialidades e Status de andamento atuais.
+*   **Especialidades Gráficas:** Cada Diretiva apresenta as especialidades (ELE, MEC, etc) atreladas formatadas em pílulas num Grid responsivo.
 *   **Busca:** Use a barra lateral para filtrar por Matrícula, SN ou Código da DT.
 *   **Tooltip:** Passe o mouse sobre uma linha para ler o objetivo da diretiva sem precisar abrir os detalhes.
-*   **Paginação:** Use os botões no rodapé para navegar entre os registros (50 por página).
-*   **Exportar:** O botão no topo da tabela gera um arquivo Excel com a situação atual da frota.
+*   **Paginação Otimizada:** Use os botões no rodapé para navegar perfeitamente entre milhares de registros sem travar o servidor.
+*   **Exportar:** O botão (só visível para login) gera um arquivo Excel com a situação atual da frota.
 
 ---
 
-## ✈️ 3. Detalhes e Cumprimento
+## ✈️ 3. Detalhes, Anexos e Extrator Inteligente
 Clique em qualquer linha para abrir a janela de detalhes.
-*   **Visualização (Público):** Todos podem ver o status e baixar arquivos PDF anexos.
+*   **Visualização Nativa:** Todos podem ver os comprovantes em PDF que abrem num prático pop-up flutuante interno (Modal).
+*   **Extração Automática:** Admins ou Inspetores, ao enviarem o PDF, terão o arquivo inteiramente lido pela IA (AT Parser). Campos como Serviço e Parecer serão dissecados e transcritos instantaneamente na tela!
 *   **Execução (Inspetor/Admin):** 
     *   Altere o Status (Pendente, Concluída, etc).
-    *   Escreva observações técnicas da execução naquela aeronave.
-    *   Anexe comprovantes em PDF.
-*   **Restrição:** Um inspetor só pode salvar alterações se a especialidade da DT coincidir com a sua (ex: Elétrica).
+    *   Com a ajuda do Parser, escreva ativamente notas corretas para relatar a DT.
+*   **Restrição:** Um inspetor só pode salvar alterações se a especialidade da DT o permitir.
 
 ---
 

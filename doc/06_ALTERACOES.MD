@@ -1,4 +1,4 @@
-ALTERACOES NA VERSAO 2.0.0 (EM DESENVOLVIMENTO):
+ALTERACOES NA VERSAO 2.0.0 (CONCLUÍDO):
 	[NOVA FUNCIONALIDADE] AT PARSER:
 		Implementação da biblioteca PyMuPDF para ler automaticamente arquivos PDF de Assessoramento Técnico.
 		Extração automática dos campos: Ficha A.T., Serviço Solicitado e Parecer da Engenharia.
@@ -12,6 +12,10 @@ ALTERACOES NA VERSAO 2.0.0 (EM DESENVOLVIMENTO):
 		- EQV (Equipamento de Voo)
 		- TODAS (Caso a DT se aplique a todas as especialidades)
 	[BANCO DE DADOS] Atualização da tabela DiretivaAeronave para incluir campos de texto para os dados extraídos (at_numero, at_servico, at_parecer).
+	[INFRAESTRUTURA E SEGURANÇA] Migrações e Blindagem:
+		Adoção do Alembic para gerir evolução de esquemas de Banco (SQLite/PostgreSQL).
+		Remoção de todas as senhas hardcoded via fallback, exigindo obrigatoriamente variáveis de ambiente (.env).
+		Proteção total das rotas de extração de relatórios e requisições assíncronas (HTMX) bloqueando visitantes anônimos.
 
 ALTERACOES NA TELA DASHBOARD (CONCLUÍDO v1.0):
 	REMOVER COLUNA PN/CFF E MANTER COLUNA "MATRICULA"

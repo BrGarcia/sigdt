@@ -41,6 +41,12 @@ O método tradicional, mas exige mais cuidados de segurança.
 
 ---
 
+## Preparação Crítica (V2.0.0+)
+1. **Ambiente:** Certifique-se de que o arquivo `.env` contendo senhas vitais foi preenchido corretamente no servidor.
+2. **Banco de Dados:** Ao subir a aplicação em uma máquina nova pela primeira vez, utilize impreterivelmente o comando `alembic upgrade head` para construir a estrutura de tabelas atualizada.
+
+---
+
 ## Cuidados Críticos de Segurança
 
 1. **Mude a Senha Padrão:** O primeiro passo ao colocar o sistema online deve ser trocar a senha do usuário `admin/admin`.

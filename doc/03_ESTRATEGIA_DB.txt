@@ -61,3 +61,7 @@ Todo processo de importação deve ocorrer dentro de uma transação: BEGIN;
 -   Auditoria de alterações
 -   Dashboard de conformidade
 -   Alertas automáticos
+
+9. MIGRAÇÕES COM ALEMBIC
+
+A evolução do modelo DDL agora é gerenciada estritamente pelo Alembic (diretório `migrations/`). As migrações baseadas no SQLModel ficam salvas em `migrations/versions/`. Para equalizar um banco novo, deve-se gerar o deploy usando `alembic upgrade head` para prevenir perdas de integridade.
