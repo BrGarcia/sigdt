@@ -1,0 +1,26 @@
+REATORAÇÃO DE BANCO DE DADOS - SIGDT V3
+
+1. OBJETIVO
+Adequar a estrutura do banco de dados para suportar a normalização da "Coluna J" (Número da Diretiva) e permitir que uma única diretiva possua múltiplos identificadores (FADT, B.O., ETD, etc.), evitando duplicidade e inconsistência de dados.
+
+2. ALTERAÇÕES NOS MODELOS (SQLModel)
+- Nova tabela: `DiretivaIdentificador`
+  - Campos: id, diretiva_id (FK), tipo_identificador, valor_identificador.
+  - Restrição: UniqueConstraint(tipo_identificador, valor_identificador).
+- Modificações na tabela `Diretiva`:
+  - Inclusão de `numero_diretiva_original` (armazena o dado bruto da importação).
+  - Inclusão de `numero_diretiva_normalizado` (armazena a versão tratada para busca e indexação).
+  - Remoção da restrição de unicidade (`unique=True`) do campo `fadt` para permitir a migração para o novo modelo associativo.
+  - Relacionamento: `identificadores` (1:N com DiretivaIdentificador).
+
+3. ESTRATÉGIA DE MIGRAÇÃO (ALEMBIC)
+- As alterações de esquema serão aplicadas via migrações Alembic.
+- Os dados existentes na coluna `fadt` serão migrados automaticamente para a nova tabela `DiretivaIdentificador` como tipo 'FADT'.
+
+4. LÓGICA DE NORMALIZAÇÃO
+- Implementação de função de limpeza na camada de serviço (Python).
+- Passos: Conversão para UPPER, remoção de espaços extras, padronização de hífens/separadores.
+- A busca durante a importação passará a priorizar o `numero_diretiva_normalizado`.
+
+5. IMPACTO NAS BUSCAS
+- As consultas no frontend e backend serão atualizadas para buscar tanto no campo normalizado quanto na tabela de identificadores vinculados.

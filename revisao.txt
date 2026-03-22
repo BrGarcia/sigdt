@@ -1,0 +1,467 @@
+================================================================================
+  REVISÃO ESTÁTICA DE SEGURANÇA (SAST) — SIGDT v1.0.0-pre
+  Sistema de Gestão de Diretivas Técnicas
+  Data da Análise: 2026-03-20 (2ª Revisão — Pós-Atualizações)
+================================================================================
+
+Analista: Especialista em Segurança de Aplicações (AppSec)
+Escopo: Re-análise do código-fonte após atualizações, comparando com a
+        revisão anterior e verificando quais vulnerabilidades foram
+        corrigidas, mitigadas ou permanecem abertas.
+Referências: OWASP Top 10 (2021), CWE, boas práticas de codificação segura.
+
+================================================================================
+  SEÇÃO 1 — MELHORIAS APLICADAS (CORRIGIDAS / MITIGADAS)
+================================================================================
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ✅ M1 — RATE LIMITING IMPLEMENTADO (Ex-#05)                                │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Arquivo:    app/main.py, Linhas 30-42 (nova função is_rate_limited)        │
+│             app/main.py, Linhas 79-82 (Gatekeeper com rate limit)          │
+│             app/users/routes.py, Linhas 76-79 (Login com rate limit)       │
+│ Melhoria:   Rate limiter in-memory adicionado com 5 tentativas/60s por IP. │
+│             Tanto o endpoint POST /gatekeeper quanto POST /users/token     │
+│             agora retornam HTTP 429 após exceder o limite.                 │
+│ Status:     CORRIGIDO. A vulnerabilidade #05 original foi endereçada.      │
+│ Ressalva:   O rate limiter é in-memory (defaultdict). Em ambientes com     │
+│             múltiplos workers/processos ou atrás de load balancer, cada    │
+│             instância mantém sua própria contagem separada, permitindo     │
+│             multiplicar o limite pelo número de workers. Além disso,       │
+│             não persiste entre reinícios do servidor. Para produção,       │
+│             considerar Redis ou solução distribuída.                       │
+│ Gravidade   BAIXA (risco residual em cenário multi-worker)                 │
+│ Residual:                                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ✅ M2 — VALIDAÇÃO DE MAGIC BYTES EM UPLOAD PDF (Ex-#03a)                   │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Arquivo:    app/main.py, Linhas 228-230                                    │
+│ Melhoria:   Adicionada verificação de assinatura PDF (%PDF-) antes de      │
+│             salvar o arquivo. Isso impede upload de arquivos .html, .svg   │
+│             ou outros disfarçados como PDF.                                │
+│ Status:     MITIGADO PARCIALMENTE. A verificação de magic bytes é boa,     │
+│             mas a extensão do arquivo (Linha 235) ainda é extraída do      │
+│             filename do usuário sem whitelist. Um atacante poderia enviar  │
+│             um PDF real com extensão .html.                                │
+│ Gravidade   MÉDIA (extensão ainda não validada)                            │
+│ Residual:                                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ✅ M3 — SENHAS FORTES NO .env (Ex-#01 Gatekeeper e Admin)                  │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Arquivo:    .env, Linhas 4-5                                               │
+│ Melhoria:   ADMIN_PASSWORD e GATEKEEPER_PASSWORD agora são definidos no    │
+│             .env com valores fortes e complexos (caracteres especiais,     │
+│             alfanuméricos). As senhas padrão fracas ("admin", "asdf1234")  │
+│             são efetivamente substituídas quando o .env é carregado.       │
+│ Status:     MITIGADO. As senhas padrão hardcoded no código ainda existem   │
+│             como fallback, mas são substituídas pelo .env na prática.      │
+│ Gravidade   BAIXA (risco residual: se .env não for carregado, os          │
+│ Residual:   fallbacks fracos serão usados)                                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ✅ M4 — DOCKERFILE SEM --reload EM PRODUÇÃO (Ex-#13b)                      │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Arquivo:    Dockerfile, Linhas 21-23                                       │
+│ Melhoria:   O CMD do Dockerfile agora usa uvicorn sem --reload. Inclui     │
+│             --proxy-headers e --forwarded-allow-ips para deploy atrás de   │
+│             proxy reverso (Railway). Porta configurável via ENV PORT.      │
+│ Status:     CORRIGIDO para o Dockerfile.                                   │
+│ Ressalva:   O docker-compose.yml (Linha 15) AINDA usa --reload, o que é   │
+│             aceitável se usado apenas em desenvolvimento local, mas        │
+│             deveria ser explicitamente documentado como "apenas dev".      │
+│ Gravidade   BAIXA                                                          │
+│ Residual:                                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ✅ M5 — SINCRONIZAÇÃO DA SENHA ADMIN NO STARTUP (Melhoria de Robustez)     │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Arquivo:    app/main.py, Linhas 59-65                                      │
+│ Melhoria:   No startup, se o admin já existe, sua senha é re-hasheada a    │
+│             partir da variável de ambiente ADMIN_PASSWORD. Isso garante    │
+│             que alterações no .env sejam refletidas sem recriar o banco.   │
+│ Status:     CORRIGIDO.                                                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ✅ M6 — CRIAÇÃO DE USUÁRIO VIA FORM DATA (Melhoria de UX/Integração)       │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Arquivo:    app/users/routes.py, Linhas 107-128                            │
+│ Melhoria:   O endpoint POST /users/ agora aceita dados via Form(...)       │
+│             ao invés de JSON body (schemas.UserCreate). Retorna partial    │
+│             HTML (user_row.html) para integração com HTMX. Isso alinha    │
+│             o endpoint com o restante da aplicação server-rendered.        │
+│ Status:     CORRIGIDO (funcional, mas sem impacto direto em segurança).    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+  SEÇÃO 2 — VULNERABILIDADES QUE PERMANECEM ABERTAS
+================================================================================
+
+  LEGENDA DE GRAVIDADE:
+  CRÍTICA  — Exploração trivial, impacto total.
+  ALTA     — Exploração provável, impacto significativo.
+  MÉDIA    — Exploração possível, reduz postura de segurança.
+  BAIXA    — Má prática, impacto limitado isoladamente.
+
+────────────────────────────────────────────────────────────────────────────────
+#01 | SECRET_KEY JWT HARDCODED (INALTERADO — Ex-#01)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/users/security.py, Linha 11
+Descrição:     SECRET_KEY usa fallback hardcoded
+               ("a_very_secret_key_change_me_in_production"). Diferente
+               das senhas admin/gatekeeper, NÃO há variável SECRET_KEY no
+               .env. Isso significa que o JWT está sendo assinado com a
+               chave pública hardcoded no código-fonte.
+Gravidade:     CRÍTICA
+Justificativa: Permite forjar tokens JWT para qualquer usuário.
+               OWASP A02:2021 (Cryptographic Failures), CWE-798.
+Recomendação:  Adicionar SECRET_KEY ao .env com valor gerado via:
+               python -c "import secrets; print(secrets.token_urlsafe(64))"
+
+────────────────────────────────────────────────────────────────────────────────
+#02 | GATEKEEPER — COOKIE BURLÁVEL (INALTERADO — Ex-#06)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/main.py, Linhas 44-47
+Descrição:     A verificação compara cookie "gatekeeper_access" com string
+               "granted". Qualquer pessoa pode definir manualmente este
+               cookie no navegador sem conhecer a senha.
+Gravidade:     CRÍTICA
+Justificativa: Elimina a camada de proteção de borda (doc/01_README.md
+               §Camadas de Segurança). OWASP A01:2021, CWE-807.
+Recomendação:  Usar token HMAC assinado com SECRET_KEY + timestamp.
+
+────────────────────────────────────────────────────────────────────────────────
+#03 | AUSÊNCIA DE PROTEÇÃO CSRF (INALTERADO — Ex-#02)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: Todos os formulários POST (main.py, templates HTML)
+Descrição:     Nenhum formulário contém token CSRF. Autenticação via cookies
+               HttpOnly permite CSRF em todas as operações de escrita.
+Gravidade:     ALTA
+Justificativa: OWASP A01:2021, CWE-352.
+Recomendação:  Implementar middleware CSRF ou tokens por formulário.
+
+────────────────────────────────────────────────────────────────────────────────
+#04 | UPLOAD — EXTENSÃO NÃO VALIDADA (PARCIAL — Ex-#03)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/main.py, Linha 235
+Descrição:     Magic bytes agora são verificados (M2), mas a extensão do
+               arquivo ainda é extraída do filename do usuário sem whitelist.
+               Um atacante pode enviar um PDF real com extensão .html, que
+               seria servido com Content-Type text/html pelo StaticFiles.
+Gravidade:     MÉDIA (reduzida de ALTA graças à validação de magic bytes)
+Justificativa: CWE-434. doc/02_ESPECIFICACOES.md §4.3 especifica apenas PDF.
+Recomendação:  Forçar extensão .pdf independente do nome original.
+
+────────────────────────────────────────────────────────────────────────────────
+#05 | CSV UPLOAD SEM LIMITE DE TAMANHO (INALTERADO — Ex-#03b)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/main.py, Linhas 131-140
+Descrição:     O endpoint /upload aceita múltiplos CSVs sem limite de
+               tamanho individual ou total. Conteúdo carregado inteiro em
+               memória.
+Gravidade:     MÉDIA
+Justificativa: CWE-400. Sistema descrito como para "hardware limitado".
+
+────────────────────────────────────────────────────────────────────────────────
+#06 | COOKIES SEM FLAG Secure (INALTERADO — Ex-#04)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/main.py, Linha 92; app/users/routes.py, Linha 98
+Descrição:     Ambos os cookies mantêm secure=False.
+Gravidade:     MÉDIA
+Justificativa: OWASP A02:2021, CWE-614.
+Recomendação:  Condicionar ao ambiente: secure=(ENVIRONMENT == "production").
+
+────────────────────────────────────────────────────────────────────────────────
+#07 | GATEKEEPER — APLICAÇÃO INCONSISTENTE (INALTERADO — Ex-#07)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/main.py — rotas /directives (GET HTMX), /update-tendencia,
+               /export/xlsx; app/users/routes.py — todas as rotas /users/*
+Descrição:     Múltiplas rotas não verificam o Gatekeeper.
+Gravidade:     MÉDIA
+Justificativa: CWE-285. Quebra requisito arquitetural de doc/01_README.md.
+
+────────────────────────────────────────────────────────────────────────────────
+#08 | EXPORTAÇÃO XLSX SEM AUTENTICAÇÃO (INALTERADO — Ex-#08)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/main.py, Linhas 317-358
+Descrição:     GET /export/xlsx não exige Gatekeeper nem login. Dados
+               completos de diretivas acessíveis publicamente.
+Gravidade:     ALTA
+Justificativa: OWASP A01:2021 (Broken Access Control).
+
+────────────────────────────────────────────────────────────────────────────────
+#09 | PATH TRAVERSAL — EXTENSÃO DE UPLOAD (INALTERADO — Ex-#09)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/main.py, Linha 235 (extensão), Linha 272 (exclusão)
+Descrição:     Extensão extraída do filename do usuário sem sanitização.
+               Exclusão de anexo concatena pdf_path do banco sem validação.
+Gravidade:     MÉDIA
+Justificativa: CWE-22.
+
+────────────────────────────────────────────────────────────────────────────────
+#10 | AUSÊNCIA DE HEADERS DE SEGURANÇA HTTP (INALTERADO — Ex-#10)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/main.py (aplicação global)
+Descrição:     Sem CSP, X-Content-Type-Options, X-Frame-Options, HSTS,
+               Referrer-Policy, Permissions-Policy.
+Gravidade:     MÉDIA
+Justificativa: OWASP A05:2021, CWE-693.
+
+────────────────────────────────────────────────────────────────────────────────
+#11 | CSV INJECTION INCONSISTENTE (INALTERADO — Ex-#11)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/services/csv_service.py, Linhas 8-27; app/main.py, 322-325
+Descrição:     Sanitização de fórmulas na importação CSV e na exportação
+               XLSX, mas dados de formulários web não passam pela mesma
+               sanitização. Risco de dupla sanitização (CSV importado +
+               exportado).
+Gravidade:     MÉDIA
+Justificativa: CWE-1236.
+
+────────────────────────────────────────────────────────────────────────────────
+#12 | DEPENDÊNCIAS SEM VERSÕES FIXAS (INALTERADO — Ex-#12)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: requirements.txt
+Descrição:     Apenas bcrypt tem versão fixa. Todas as outras dependências
+               são instaladas sem pinning.
+Gravidade:     MÉDIA
+Justificativa: OWASP A06:2021, CWE-1104.
+
+────────────────────────────────────────────────────────────────────────────────
+#13 | DOCKER — EXECUÇÃO COMO ROOT (INALTERADO — Ex-#13a)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: Dockerfile
+Descrição:     Não há criação de usuário não-root. Processo roda como root.
+Gravidade:     MÉDIA
+Justificativa: CWE-250.
+Nota:          O CMD de produção foi corrigido (M4), mas o container
+               ainda roda como root.
+
+────────────────────────────────────────────────────────────────────────────────
+#14 | POSTGRESQL EXPOSTO EXTERNAMENTE (INALTERADO — Ex-#13c)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: docker-compose.yml, Linhas 10-11
+Descrição:     Porta 5432 mapeada externamente. Combinado com credenciais
+               fracas (sigdt/sigdt_pass na .env e hardcoded no compose).
+Gravidade:     ALTA
+Justificativa: OWASP A05:2021.
+Nota:          As credenciais do PostgreSQL no .env e no docker-compose.yml
+               NÃO foram fortalecidas (apenas admin e gatekeeper foram).
+
+────────────────────────────────────────────────────────────────────────────────
+#15 | CREDENCIAIS DO POSTGRES HARDCODED NO COMPOSE (INALTERADO — Ex-#01d)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: docker-compose.yml, Linha 23; .env, Linhas 1-3
+Descrição:     DATABASE_URL hardcoded com sigdt:sigdt_pass no compose.
+               Credenciais do Postgres no .env ainda são fracas.
+Gravidade:     MÉDIA
+Justificativa: CWE-798.
+
+────────────────────────────────────────────────────────────────────────────────
+#16 | AUSÊNCIA DE VALIDAÇÃO DE ENTRADA (INALTERADO — Ex-#14)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/main.py, Linhas 194-252, 290-308, 417-452
+Descrição:     Campos status, tendencia, codigo_diretiva, objetivo, classe,
+               categoria não são validados server-side. Tendencia aceita
+               qualquer inteiro (negativo, zero, absurdo).
+Gravidade:     MÉDIA
+Justificativa: OWASP A04:2021, CWE-20.
+
+────────────────────────────────────────────────────────────────────────────────
+#17 | AUSÊNCIA DE LOGS DE AUDITORIA (INALTERADO — Ex-#17)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: Toda a aplicação
+Descrição:     Nenhuma ação sensível é registrada em log de auditoria.
+Gravidade:     MÉDIA
+Justificativa: OWASP A09:2021, CWE-778.
+
+────────────────────────────────────────────────────────────────────────────────
+#18 | AUSÊNCIA DE EXCLUSÃO DE USUÁRIOS (INALTERADO — Ex-#19)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/users/routes.py
+Descrição:     Requisito de doc/02_ESPECIFICACOES.md §3.3 ("deletar
+               inspetores") não implementado. Contas permanecem ativas
+               indefinidamente.
+Gravidade:     MÉDIA
+Justificativa: CWE-285.
+
+────────────────────────────────────────────────────────────────────────────────
+#19 | JWT SEM REVOGAÇÃO (INALTERADO — Ex-#24)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/users/security.py, Linhas 21-29; app/users/routes.py, 102-105
+Descrição:     Tokens não têm jti, não há blacklist. Logout apaga cookie
+               mas token roubado permanece válido até expirar (30 min).
+Gravidade:     MÉDIA
+Justificativa: CWE-613.
+
+────────────────────────────────────────────────────────────────────────────────
+#20 | SWAGGER/OPENAPI EXPOSTO (INALTERADO — Ex-#25)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/main.py, Linha 22
+Descrição:     /docs e /redoc acessíveis sem autenticação.
+Gravidade:     MÉDIA
+Justificativa: OWASP A05:2021.
+
+────────────────────────────────────────────────────────────────────────────────
+#21 | SENHAS SEM POLÍTICA DE COMPLEXIDADE (INALTERADO — Ex-#26)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/users/schemas.py, Linhas 4-8
+Descrição:     Sem requisitos mínimos de comprimento ou complexidade para
+               senhas de novos inspetores.
+Gravidade:     MÉDIA
+Justificativa: OWASP A07:2021, CWE-521.
+
+────────────────────────────────────────────────────────────────────────────────
+#22 | CDN SEM SUBRESOURCE INTEGRITY (INALTERADO — Ex-#23)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: Todos os templates HTML
+Descrição:     HTMX e Tailwind CSS carregados de CDN sem atributos SRI.
+Gravidade:     MÉDIA
+Justificativa: OWASP A08:2021, CWE-829.
+
+────────────────────────────────────────────────────────────────────────────────
+#23 | CSV — TRANSAÇÃO NÃO-ATÔMICA (INALTERADO — Ex-#21)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/services/csv_service.py, Linhas 30-114
+Descrição:     Commits a cada 100 linhas (batch). Erro no meio deixa dados
+               parcialmente importados. Viola doc/03_ESTRATEGIA_DB.txt §6
+               (transação única com ROLLBACK em caso de erro).
+Gravidade:     ALTA
+Justificativa: CWE-390, CWE-754.
+
+────────────────────────────────────────────────────────────────────────────────
+#24 | PERFORMANCE DoS — CONTAGEM EM MEMÓRIA (INALTERADO — Ex-#20)
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/main.py, Linha 386
+Descrição:     len(session.exec(statement).all()) carrega todos os registros
+               em memória para obter contagem.
+Gravidade:     BAIXA
+Justificativa: CWE-400.
+
+────────────────────────────────────────────────────────────────────────────────
+#25 | NOVA OBSERVAÇÃO — --forwarded-allow-ips='*' PERMISSIVO
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: Dockerfile, Linha 23
+Descrição:     O CMD de produção usa --forwarded-allow-ips='*', que confia
+               em headers X-Forwarded-For de qualquer origem. Isso permite
+               que um atacante forje seu IP enviando headers manipulados,
+               potencialmente burlando o rate limiter baseado em IP
+               (is_rate_limited) e afetando logs.
+Gravidade:     MÉDIA (NOVA — introduzida pela atualização)
+Justificativa: CWE-346 (Origin Validation Error). O --forwarded-allow-ips
+               deveria listar apenas IPs confiáveis do proxy reverso.
+
+────────────────────────────────────────────────────────────────────────────────
+#26 | NOVA OBSERVAÇÃO — IMPORT CIRCULAR ON-DEMAND
+────────────────────────────────────────────────────────────────────────────────
+Arquivo/Linha: app/users/routes.py, Linhas 76, 124
+Descrição:     Imports dentro de funções (`from app.main import ...`) são
+               usados para evitar imports circulares. Embora funcional, isso
+               é um indicador de design frágil. Uma refatoração futura pode
+               acidentalmente quebrar a importação, causando erro 500 em
+               runtime.
+Gravidade:     BAIXA (qualidade de código, não vulnerabilidade direta)
+Justificativa: CWE-710 (Improper Adherence to Coding Standards).
+
+
+================================================================================
+  SEÇÃO 3 — RESUMO COMPARATIVO
+================================================================================
+
+  ┌────────────────────────────────────┬────────────┬────────────┐
+  │ MÉTRICA                           │ 1ª REVISÃO │ 2ª REVISÃO │
+  ├────────────────────────────────────┼────────────┼────────────┤
+  │ Total de Observações              │     27     │     26     │
+  │ Corrigidas / Mitigadas            │      0     │      6     │
+  │ Novas Observações                 │      —     │      2     │
+  │ Inalteradas (abertas)             │     27     │     24     │
+  ├────────────────────────────────────┼────────────┼────────────┤
+  │ CRÍTICAS                          │      2     │      2     │
+  │ ALTAS                             │      8     │      3     │
+  │ MÉDIAS                            │     13     │     17     │
+  │ BAIXAS                            │      4     │      4     │
+  └────────────────────────────────────┴────────────┴────────────┘
+
+  Observação: Algumas vulnerabilidades classificadas como ALTA na 1ª revisão
+  foram reclassificadas para MÉDIA nesta revisão porque as mitigações
+  parciais (M2 e M3) reduziram a gravidade efetiva, mesmo sem corrigi-las
+  completamente.
+
+
+================================================================================
+  SEÇÃO 4 — MAPA DE RASTREABILIDADE (1ª Rev → 2ª Rev)
+================================================================================
+
+  1ª Rev  Título Original                        2ª Rev  Status
+  ──────  ─────────────────────────────────────  ──────  ──────────────
+  #01a    SECRET_KEY hardcoded                   #01     INALTERADO
+  #01b    Gatekeeper senha fraca                 —       CORRIGIDO (M3)
+  #01c    Admin senha fraca                      —       CORRIGIDO (M3)
+  #01d    .env credenciais Postgres              #15     INALTERADO
+  #01e    docker-compose credenciais             #15     INALTERADO
+  #02     CSRF ausente                           #03     INALTERADO
+  #03a    Upload sem validação de tipo           —       MITIGADO (M2)
+  #03b    CSV sem limite de tamanho              #05     INALTERADO
+  #04     Cookies sem Secure                     #06     INALTERADO
+  #05     Rate Limiting ausente                  —       CORRIGIDO (M1)
+  #06     Gatekeeper cookie burlável             #02     INALTERADO
+  #07     Gatekeeper inconsistente               #07     INALTERADO
+  #08     XLSX sem autenticação                  #08     INALTERADO
+  #09     Path Traversal upload/exclusão         #09     INALTERADO
+  #10     Headers HTTP ausentes                  #10     INALTERADO
+  #11     CSV Injection inconsistente            #11     INALTERADO
+  #12     Dependências sem pinning               #12     INALTERADO
+  #13a    Docker root                            #13     INALTERADO
+  #13b    --reload em produção                   —       CORRIGIDO (M4)
+  #13c    PostgreSQL exposto                     #14     INALTERADO
+  #14     Validação de entrada ausente           #16     INALTERADO
+  #15     XSS (residual)                         —       REMOVIDO (baixo)
+  #16     IDOR                                   —       REMOVIDO (aceito)
+  #17     Logs de auditoria ausentes             #17     INALTERADO
+  #18     Healthcheck informativo                —       REMOVIDO (aceito)
+  #19     Exclusão de usuários ausente           #18     INALTERADO
+  #20     DoS performance                        #24     INALTERADO
+  #21     CSV transação não-atômica              #23     INALTERADO
+  #22     CSV encoding UTF-8                     —       REMOVIDO (baixo)
+  #23     CDN sem SRI                            #22     INALTERADO
+  #24     JWT sem revogação                      #19     INALTERADO
+  #25     Swagger exposto                        #20     INALTERADO
+  #26     Senhas sem política                    #21     INALTERADO
+  #27     Erros informativos                     —       REMOVIDO (baixo)
+  —       (NOVO) forwarded-allow-ips='*'         #25     NOVA
+  —       (NOVO) Import circular on-demand       #26     NOVA
+
+
+================================================================================
+  SEÇÃO 5 — TOP 5 RECOMENDAÇÕES PRIORITÁRIAS (ATUALIZADO)
+================================================================================
+
+  1. ⚠️ URGENTE — ADICIONAR SECRET_KEY AO .env
+     A SECRET_KEY do JWT está usando o valor hardcoded. Todas as outras
+     senhas foram fortalecidas, mas esta foi esquecida. Adicionar ao .env:
+     SECRET_KEY=<valor gerado com: python -c "import secrets; print(secrets.token_urlsafe(64))">
+
+  2. CORRIGIR GATEKEEPER — Substituir comparação de cookie por valor fixo
+     por token HMAC assinado com SECRET_KEY. Sem isso, a camada Gatekeeper
+     é decorativa.
+
+  3. IMPLEMENTAR PROTEÇÃO CSRF — Middleware ou tokens por formulário.
+     Priorizar: /upload, /directives POST, /users/ POST, /master-directives.
+
+  4. FORÇAR EXTENSÃO .pdf NO UPLOAD — Ignorar a extensão do usuário e
+     usar sempre ".pdf" ao salvar. A validação de magic bytes (M2) é boa
+     mas insuficiente sem controle da extensão.
+
+  5. PROTEGER EXPORTAÇÃO XLSX — Adicionar Depends(get_current_user) ou
+     pelo menos check_gatekeeper ao endpoint /export/xlsx.
+
+================================================================================
+  FIM DO RELATÓRIO
+================================================================================

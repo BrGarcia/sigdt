@@ -1,67 +1,165 @@
 ESTRATÉGIA DE BANCO DE DADOS – CONTROLE DE DIRETIVAS TÉCNICAS
 
-1.  VISÃO GERAL O sistema tem como objetivo controlar a aplicação de
-    diretivas técnicas em uma frota de aeronaves, utilizando PostgreSQL
-    como banco de dados relacional. A entrada de dados será realizada
-    por meio de arquivos CSV individuais por aeronave.
+1. VISÃO GERAL
+O sistema tem como objetivo controlar a aplicação de diretivas técnicas em uma frota de aeronaves, utilizando PostgreSQL como banco de dados relacional. A entrada de dados será realizada por meio de arquivos CSV individuais por aeronave.
 
-2.  MODELO DE DADOS
+2. PRINCÍPIO DE MODELAGEM
+A coluna J do arquivo contém o número da diretiva técnica, porém esse dado não possui padronização de cadastro. Portanto, ele NÃO deve ser usado diretamente como chave primária da tabela principal de diretivas.
 
-Tabelas principais:
+A recomendação é separar:
+- Chave técnica interna do banco: identificador artificial (id)
+- Chave de negócio canônica: número normalizado da diretiva
+- Identificadores alternativos: FADT e demais variações do mesmo cadastro
 
-AERONAVE - id (PK) - matricula (UNIQUE) - numero_serie (UNIQUE)
+Isso evita problemas com:
+- formatos diferentes para a mesma diretiva
+- duplicidade por inconsistência de escrita
+- perda de histórico quando surgir nova variação do mesmo número
 
-DIRETIVA_TECNICA - id (PK) - codigo_diretiva - fadt (UNIQUE) -
-objetivo - classe - categoria - tipo - natureza - ordem - especialidade
+3. ESTRATÉGIA PARA HIGIENIZAÇÃO DA COLUNA J
+Antes de gravar os dados no banco, a coluna J deve passar por uma rotina de normalização em camada de aplicação.
 
-DIRETIVA_AERONAVE - id (PK) - aeronave_id (FK) - diretiva_tecnica_id
-(FK) - status - data_aplicacao - data_status - ordem_aplicada -
-observacao
+Passos recomendados:
+1. Remover espaços excedentes no início e no fim
+2. Converter para maiúsculas
+3. Padronizar separadores (traço, barra, ponto, espaço)
+4. Eliminar caracteres invisíveis e ruídos de digitação
+5. Normalizar abreviações conhecidas
+6. Extrair partes estruturais do código quando possível
+7. Gerar uma versão canônica do número da diretiva
 
-Restrição: UNIQUE (aeronave_id, diretiva_tecnica_id)
+Exemplos de normalização:
+- " bo nº: 314-002/24 " -> "BO Nº 314-002/24"
+- "ETD: gtn-0641/2013" -> "ETD GTN-0641/2013"
+- "IT LS 22 320 A29 021" -> "IT LS 22 320 A29 021"
 
-3.  ESTRATÉGIA DE IMPORTAÇÃO (CSV)
+Caso o número seja muito heterogêneo, a coluna original deve ser preservada em um campo bruto, e a versão tratada deve ser salva em outro campo.
 
+4. ESTRUTURA RECOMENDADA DE DADOS
+
+TABELA AERONAVE
+- id (PK)
+- matricula (UNIQUE)
+- numero_serie (UNIQUE)
+
+TABELA DIRETIVA
+- id (PK artificial)
+- numero_diretiva_original
+- numero_diretiva_normalizado
+- descricao_objetivo
+- classe
+- categoria
+- tipo
+- natureza
+- ordem_atual
+- especialidade
+
+TABELA DIRETIVA_IDENTIFICADOR
+- id (PK)
+- diretiva_id (FK)
+- tipo_identificador
+- valor_identificador
+
+Exemplos de tipo_identificador:
+- NUMERO_DIRETIVA
+- FADT
+- B.O.
+- ETD
+- IT
+- NPO
+
+Essa tabela permite que uma mesma diretiva tenha mais de uma FADT ou mais de uma forma de identificação sem duplicar o cadastro principal.
+
+TABELA DIRETIVA_AERONAVE
+- id (PK)
+- aeronave_id (FK)
+- diretiva_id (FK)
+- status
+- data_aplicacao
+- data_status
+- ordem_aplicada
+- observacao
+
+Restrição recomendada:
+UNIQUE (aeronave_id, diretiva_id)
+
+5. RELACIONAMENTO ENTRE OS DADOS
+A relação correta é a seguinte:
+
+- Uma diretiva pode ter vários identificadores
+- Uma diretiva pode estar associada a várias aeronaves
+- Uma aeronave pode possuir várias diretivas
+
+Portanto:
+- DIRETIVA 1:N DIRETIVA_IDENTIFICADOR
+- DIRETIVA N:N AERONAVE, resolvida pela tabela DIRETIVA_AERONAVE
+
+6. ESTRATÉGIA DE IMPORTAÇÃO (CSV)
 Cada arquivo CSV representa uma única aeronave.
 
-Fluxo: 
-	1. Ler o CSV 
-	2. Criar ou obter aeronave (UPSERT) 
-	3. Para cada linha: 
-		- Criar ou obter diretiva (UPSERT via FADT) 
-		- Criar ou atualizar vínculo com aeronave (UPSERT)
+Fluxo de processamento:
+1. Ler o CSV
+2. Localizar ou criar a aeronave com base na matrícula
+3. Para cada linha:
+   - normalizar o número da diretiva da coluna J
+   - registrar a versão original e a versão tratada
+   - localizar ou criar a diretiva principal
+   - localizar ou criar os identificadores alternativos, incluindo FADT
+   - criar ou atualizar o vínculo da diretiva com a aeronave
 
-4.  UPSERT (POSTGRESQL)
+7. ESTRATÉGIA DE CHAVE PRIMÁRIA
+Não usar o número da diretiva como chave primária, porque ele não é confiável como identificador único estável.
 
-Utilizar: INSERT … ON CONFLICT
+Recomendação:
+- usar id artificial como chave primária em todas as tabelas principais
+- usar índices únicos para os campos de negócio normalizados
+- usar tabela auxiliar para armazenar variações de identificadores
 
-Para evitar duplicidade e permitir atualização automática.
+Chaves únicas sugeridas:
+- aeronave.matricula
+- aeronave.numero_serie
+- diretiva.numero_diretiva_normalizado, quando confiável
+- diretiva_identificador (tipo_identificador, valor_identificador)
 
-5.  INTEGRIDADE
+8. UPSERT NO POSTGRESQL
+O PostgreSQL suporta a estratégia necessária por meio de INSERT ... ON CONFLICT.
 
--   FADT deve ser único
--   Matrícula e número de série únicos
--   Não permitir duplicidade de diretiva por aeronave
+Isso permite:
+- evitar duplicidade
+- atualizar registros já existentes
+- reimportar arquivos sem corromper os dados
 
-6.  TRANSAÇÕES
+9. INTEGRIDADE E TRANSAÇÕES
+Todo processo de importação deve ocorrer dentro de uma transação.
 
-Todo processo de importação deve ocorrer dentro de uma transação: BEGIN;
-… COMMIT; Em caso de erro: ROLLBACK;
+Exemplo:
+BEGIN;
+...
+COMMIT;
 
-7.  BOAS PRÁTICAS
+Em caso de erro:
+ROLLBACK;
 
--   Utilizar tabela staging para importação de CSV
--   Criar índices nas chaves estrangeiras
--   Controlar histórico via campo ordem_aplicada
--   Preparar estrutura para futura evolução (versionamento de diretivas)
+Regras de integridade:
+- matrícula e número de série devem ser únicos
+- cada identificador alternativo deve ser único dentro do seu tipo
+- uma mesma diretiva não deve ser vinculada duas vezes à mesma aeronave
+- o valor bruto da coluna J deve ser preservado para auditoria
 
-8.  EVOLUÇÕES FUTURAS
+10. BOAS PRÁTICAS
+- manter coluna original e coluna normalizada
+- usar tabela staging para importação de CSV
+- criar índices nas chaves estrangeiras
+- armazenar o identificador canônico e os aliases separados
+- prever evolução futura para versionamento de diretivas
+- preservar rastreabilidade entre dado bruto e dado higienizado
 
--   Versionamento de diretivas (REV)
--   Auditoria de alterações
--   Dashboard de conformidade
--   Alertas automáticos
+11. EVOLUÇÕES FUTURAS
+- versionamento de diretivas (REV)
+- auditoria de alterações
+- dashboard de conformidade
+- alertas automáticos
+- associação de múltiplas FADT à mesma diretiva sem duplicação do cadastro principal
 
-9. MIGRAÇÕES COM ALEMBIC
-
-A evolução do modelo DDL agora é gerenciada estritamente pelo Alembic (diretório `migrations/`). As migrações baseadas no SQLModel ficam salvas em `migrations/versions/`. Para equalizar um banco novo, deve-se gerar o deploy usando `alembic upgrade head` para prevenir perdas de integridade.
+12. CONCLUSÃO
+A melhor abordagem é tratar a diretiva como uma entidade com identificador artificial interno e múltiplos identificadores de negócio. A coluna J deve ser higienizada em uma camada de processamento antes de entrar no banco, mas o valor original também deve ser preservado para rastreabilidade e auditoria.
