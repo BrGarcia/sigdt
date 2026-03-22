@@ -37,7 +37,7 @@ def format_especialidade(esp_string: str):
         'MOTORES': 'MOT', 'MOT': 'MOT',
         'CÉLULA': 'CEL', 'CELULA': 'CEL', 'CEL': 'CEL',
         'HIDRÁULICA': 'HID', 'HIDRAULICA': 'HID', 'HID': 'HID',
-        'EQUIPAMENTO DE VOO': 'EQV', 'EQV': 'EQV',
+        'EQUIPAMENTO DE VOO': 'EST', 'EQV': 'EST', 'EST': 'EST', 'ESTRUTURA': 'EST',
         'TODAS': 'TODAS'
     }
     parts = [p.strip().upper() for p in esp_string.split(';')]
@@ -46,7 +46,7 @@ def format_especialidade(esp_string: str):
         if not p: continue
         codes.add(mapping.get(p, p))
             
-    core = {'ELT', 'ELE', 'MOT', 'CEL', 'HID', 'EQV'}
+    core = {'ELT', 'ELE', 'MOT', 'CEL', 'HID', 'EST'}
     if core.issubset(codes) or 'TODAS' in codes:
         return ['TODAS']
         
