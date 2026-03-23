@@ -28,7 +28,24 @@ Foco em robustez, segurança e persistência de dados administrativos.
 
 ---
 
-## 🚀 Próximas Fases (Roadmap de Longo Prazo)
+## 🚀 Versão 4.0.0 (Inteligência & Automação Avançada)
+
+### 1. IA & Predição
+- [ ] **IA Predictiva:** Analisar histórico de execuções para sugerir automaticamente a "Tendência (T)" de novas diretivas.
+- [ ] **OCR Inteligente V2:** Extração automática de dados de ADs e SBs diretamente de sites de autoridades (ANAC, FAA, EASA).
+
+### 2. Mobilidade & Off-line
+- [ ] **PWA (Progressive Web App):** Suporte básico para uso em tablets no hangar com sincronização automática.
+- [ ] **Modo Offline:** Permitir consulta de diretivas e preenchimento de observações sem conexão ativa.
+
+### 3. Governança & Conformidade
+- [ ] **Assinatura Digital:** Integração com certificados digitais para validade jurídica dos registros de inspeção.
+- [ ] **API Pública (REST):** Endpoint documentado para integração com sistemas externos de gestão de frota.
+- [ ] **Trilha de Auditoria Completa:** Log detalhado de "Quem alterou o quê e quando" para cada campo de cada diretiva.
+
+---
+
+## 📈 Roadmap de Longo Prazo (V5.0+)
 
 - [ ] **Dashboards Visuais:** Integração com Chart.js para visualização da Matriz GUT da frota.
 - [ ] **Multi-Tenancy:** Separação lógica de dados por Base Operacional (Hangar).

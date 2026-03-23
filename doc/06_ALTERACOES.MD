@@ -1,3 +1,20 @@
+ALTERACOES NA VERSAO 3.0.0 (CONCLUÍDO):
+	[SEGURANÇA] Blindagem Global Anti-CSRF:
+		Middleware Starlette CSRF configurado no backend.
+		Integração com HTMX via headers X-CSRFToken.
+		Injeção automática de tokens em formulários tradicionais (CSV Upload, Gatekeeper).
+	[SEGURANÇA] Rate Limiting Persistente:
+		Nova tabela 'SecurityLog' para controle de tentativas de acesso.
+		Fim do controle em memória: tentativas de força bruta agora persistem a restarts do container.
+	[INFRAESTRUTURA] Centralização de Especialidades:
+		Módulo 'app/constants.py' criado como fonte única de verdade para siglas (ELT, ELE, etc).
+		Filtros dinâmicos em todos os templates (Dashboard, Gestão de Usuários, Edição Global).
+	[OBSERVABILIDADE] Logging Estruturado:
+		Configuração de logs com rotação automática em 'logs/sigdt.log'.
+		Auditoria de eventos: falhas de login, uploads de arquivos e erros críticos.
+	[FUNCIONALIDADE] Cadastro Individual de Diretivas:
+		Novo formulário '/directives/new' permitindo cadastro manual completo (Aeronave + DT Master + Vínculo).
+
 ALTERACOES NA VERSAO 2.0.0 (CONCLUÍDO):
 	[NOVA FUNCIONALIDADE] AT PARSER:
 		Implementação da biblioteca PyMuPDF para ler automaticamente arquivos PDF de Assessoramento Técnico.

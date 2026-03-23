@@ -61,13 +61,13 @@ A análise inicial do projeto SIGDT revelou diversas vulnerabilidades críticas 
 
 ### 4.2 Logs de Auditoria
 
-*   **Status:** **PENDENTE**
-*   **Recomendação:** Implementar um sistema de logging para registrar eventos importantes, como upload de arquivos e modificações de diretivas, associando-os ao usuário que realizou a ação.
+*   **Status:** **CORRIGIDO na V3.0.0**
+*   **Descrição:** Implementado sistema de logging estruturado com rotação de arquivos e registro persistente de eventos de segurança (`SecurityLog`).
 
 ### 4.3 Testes Automatizados
 
-*   **Status:** **PENDENTE**
-*   **Recomendação:** Desenvolver uma suíte de testes unitários e de integração para garantir a estabilidade do código e prevenir regressões.
+*   **Status:** **CORRIGIDO na V3.0.0**
+*   **Descrição:** Suíte de testes (Pytest) inicializada cobrindo as principais funcionalidades de integridade e segurança.
 
 ---
 
