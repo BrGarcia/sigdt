@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,31 @@
     <link rel="icon" type="image/png" href="/static/img/favicon.png">
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        htmx.on('htmx:configRequest', function (evt) {
+            const csrfToken = getCookie('csrftoken');
+            if (csrfToken) {
+                evt.detail.headers['X-CSRFToken'] = csrfToken;
+            }
+        });
+    </script>
 </head>
+
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
     <nav class="bg-blue-900 p-4 shadow-lg text-white">
         <div class="container mx-auto flex justify-between items-center">
@@ -15,10 +40,12 @@
             <div class="space-x-6 flex items-center">
                 <a href="/" class="text-sm font-medium hover:text-blue-300 transition-colors">Dashboard</a>
                 {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspetor') %}
-                    <a href="/master-directives" class="text-sm font-medium hover:text-blue-300 transition-colors">Diretivas</a>
+                <a href="/master-directives"
+                    class="text-sm font-medium hover:text-blue-300 transition-colors">Diretivas</a>
                 {% endif %}
                 <a href="/users/manage" class="text-sm font-medium hover:text-blue-300 transition-colors">Usuários</a>
-                <button id="logout-button" class="text-sm font-medium hover:text-red-300 transition-colors">Logout</button>
+                <button id="logout-button"
+                    class="text-sm font-medium hover:text-red-300 transition-colors">Logout</button>
             </div>
         </div>
     </nav>
@@ -28,30 +55,36 @@
             <!-- Create User Form -->
             <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
                 <h3 class="text-lg font-semibold mb-4 text-gray-800">Criar Novo Inspetor</h3>
-                <form hx-post="/users/" hx-target="#user-list" hx-swap="beforeend" hx-on::after-request="if(event.detail.successful) this.reset()" class="space-y-4">
+                <form hx-post="/users/" hx-target="#user-list" hx-swap="beforeend"
+                    hx-on::after-request="if(event.detail.successful) this.reset()" class="space-y-4">
                     <div>
                         <label for="username" class="block text-sm font-medium text-gray-700">Usuário</label>
-                        <input type="text" name="username" id="username" required class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                        <input type="text" name="username" id="username" required
+                            class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                        <input type="email" name="email" id="email" required class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                        <input type="email" name="email" id="email" required
+                            class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
-                        <input type="password" name="password" id="password" required class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                        <input type="password" name="password" id="password" required
+                            class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label for="especialidade" class="block text-sm font-medium text-gray-700">Especialidade</label>
-                        <select name="especialidade" id="especialidade" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                        <select name="especialidade" id="especialidade"
+                            class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Não definida</option>
-                            <option value="BMA">BMA</option>
-                            <option value="BET">BET</option>
-                            <option value="BEI">BEI</option>
-                            <option value="EST">EST - Estrutura</option>
+                            {% for code in Especialidade.list_codes() %}
+                            <option value="{{ code }}">{{ code }} ({{ Especialidade.get_label(code) }})</option>
+                            {% endfor %}
                         </select>
                     </div>
-                    <button type="submit" class="w-full bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-blue-800">Criar Inspetor</button>
+                    <button type="submit"
+                        class="w-full bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-blue-800">Criar
+                        Inspetor</button>
                 </form>
             </div>
 
@@ -60,12 +93,14 @@
                 <h3 class="text-lg font-semibold mb-4 text-gray-800">Usuários Registrados</h3>
                 <div id="user-list" class="space-y-2">
                     {% for user in users %}
-                        <div class="flex justify-between items-center p-2 border-b">
-                            <span>{{ user.username }} ({{ user.role }}) - {{ user.especialidade or 'Sem especialidade' }}</span>
-                            {% if user.role != 'admin' %}
-                            <button hx-delete="/users/{{ user.id }}" hx-target="closest div" hx-swap="delete" class="text-red-500 hover:text-red-700 font-bold px-2 py-1" title="Apagar Usuário" hx-confirm="Tem certeza que deseja apagar este usuário?">X</button>
-                            {% endif %}
-                        </div>
+                    <div class="flex justify-between items-center p-2 border-b">
+                        <span>{{ user.username }} ({{ user.role }}) - {{ user.especialidade | format_especialidade_label }}</span>
+                        {% if user.role != 'admin' %}
+                        <button hx-delete="/users/{{ user.id }}" hx-target="closest div" hx-swap="delete"
+                            class="text-red-500 hover:text-red-700 font-bold px-2 py-1" title="Apagar Usuário"
+                            hx-confirm="Tem certeza que deseja apagar este usuário?">X</button>
+                        {% endif %}
+                    </div>
                     {% endfor %}
                 </div>
             </div>
@@ -73,7 +108,7 @@
     </main>
 
     <script>
-        document.getElementById('logout-button').addEventListener('click', async function() {
+        document.getElementById('logout-button').addEventListener('click', async function () {
             try {
                 const response = await fetch('/users/logout', { method: 'POST' });
                 if (response.ok) {
@@ -90,4 +125,5 @@
         });
     </script>
 </body>
+
 </html>

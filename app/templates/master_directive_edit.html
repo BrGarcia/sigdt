@@ -6,6 +6,22 @@
     <title>Editar Diretiva Global - SIGDT</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
     <nav class="bg-blue-900 p-4 shadow-lg text-white">
@@ -64,12 +80,13 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Especialidades Responsáveis</label>
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-md border">
                         {% set selected_specs = directive.especialidade.split(';') if directive.especialidade else [] %}
-                        {% for spec in ['ELETRÔNICA', 'ELÉTRICA', 'CÉLULA', 'HIDRÁULICA', 'MOTORES', 'EST'] %}
+                        {% for code in Especialidade.list_codes() %}
+                        {% set label = Especialidade.get_label(code) %}
                         <div class="flex items-center">
-                            <input type="checkbox" name="especialidades" value="{{ spec }}" id="spec-{{ loop.index }}"
-                                {% if spec in selected_specs %}checked{% endif %}
+                            <input type="checkbox" name="especialidades" value="{{ code }}" id="spec-{{ code }}"
+                                {% if code in selected_specs or label in selected_specs %}checked{% endif %}
                                 class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                            <label for="spec-{{ loop.index }}" class="ml-2 block text-sm text-gray-900">{{ spec }}</label>
+                            <label for="spec-{{ code }}" class="ml-2 block text-sm text-gray-900">{{ label }} ({{ code }})</label>
                         </div>
                         {% endfor %}
                     </div>
@@ -84,6 +101,23 @@
     </main>
 
     <script>
+        // Inject CSRF token into traditional forms
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = getCookie('csrftoken');
+            if (token) {
+                const forms = document.querySelectorAll('form[method="post"]');
+                forms.forEach(form => {
+                    if (!form.querySelector('input[name="csrf-token"]')) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'csrf-token';
+                        input.value = token;
+                        form.appendChild(input);
+                    }
+                });
+            }
+        });
+
         document.getElementById('logout-button').addEventListener('click', async function() {
             try {
                 const response = await fetch('/users/logout', { method: 'POST' });

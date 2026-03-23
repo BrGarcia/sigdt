@@ -13,9 +13,15 @@ from datetime import datetime
 from typing import List, Optional
 
 from app.database import init_db, get_session, engine
-from app.models import Diretiva, Aeronave, DiretivaAeronave
+from app.models import Diretiva, Aeronave, DiretivaAeronave, SecurityLog
 from app.services.csv_service import process_csv
 from app.services.pdf_parser import parse_at_pdf
+from app.constants import Especialidade
+from app.logging_config import setup_logging, get_logger
+
+# Initialize Logging
+setup_logging()
+logger = get_logger("SIGDT")
 
 from app.users import routes as user_routes
 from app.users import actions as user_actions
@@ -23,55 +29,90 @@ from app.users import schemas as user_schemas
 from app.users.routes import get_current_user, get_current_admin_user, get_optional_current_user, get_current_inspetor_user
 from app.users.models import User
 
+from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.csrf import CSRFMiddleware
+
 app = FastAPI(title="SIGDT - Sistema de Gestão de Diretivas Técnicas")
+
+# Secret Key for CSRF and Sessions
+SECRET_KEY = os.getenv("SECRET_KEY", "sigdt-secret-key-change-it-in-prod")
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+app.add_middleware(CSRFMiddleware, secret_key=SECRET_KEY)
 
 # Templates
 templates = Jinja2Templates(directory="app/templates")
 
+# Context Processor for Templates
+@app.middleware("http")
+async def add_context_to_templates(request: Request, call_next):
+    # This is a bit tricky with FastAPI/Jinja2Templates as they don't have a 
+    # native "context processor" like Flask. We'll use a different approach 
+    # by adding it to the templates.env.globals.
+    return await call_next(request)
+
+templates.env.globals['Especialidade'] = Especialidade
+
 def format_especialidade(esp_string: str):
     if not esp_string:
         return []
-    mapping = {
-        'ELETRÔNICA': 'ELT', 'ELETRONICA': 'ELT', 'ELT': 'ELT',
-        'ELÉTRICA': 'ELE', 'ELETRICA': 'ELE', 'ELE': 'ELE',
-        'MOTORES': 'MOT', 'MOT': 'MOT',
-        'CÉLULA': 'CEL', 'CELULA': 'CEL', 'CEL': 'CEL',
-        'HIDRÁULICA': 'HID', 'HIDRAULICA': 'HID', 'HID': 'HID',
-        'EQUIPAMENTO DE VOO': 'EST', 'EQV': 'EST', 'EST': 'EST', 'ESTRUTURA': 'EST',
-        'TODAS': 'TODAS'
-    }
+    
     parts = [p.strip().upper() for p in esp_string.split(';')]
     codes = set()
     for p in parts:
         if not p: continue
-        codes.add(mapping.get(p, p))
+        codes.add(Especialidade.normalize(p))
             
-    core = {'ELT', 'ELE', 'MOT', 'CEL', 'HID', 'EST'}
+    core = set(Especialidade.list_codes())
     if core.issubset(codes) or 'TODAS' in codes:
         return ['TODAS']
         
     return sorted(list(codes))
 
+def format_especialidade_label(esp_string: str):
+    codes = format_especialidade(esp_string)
+    if not codes:
+        return "Não definida"
+    if codes == ['TODAS']:
+        return "TODAS"
+    labels = [Especialidade.get_label(c) for c in codes]
+    return ", ".join(labels)
+
 templates.env.filters['format_especialidade'] = format_especialidade
+templates.env.filters['format_especialidade_label'] = format_especialidade_label
 
 # Gatekeeper Password
 GATEKEEPER_PASSWORD = os.getenv("GATEKEEPER_PASSWORD")
 if not GATEKEEPER_PASSWORD:
     raise ValueError("Variável de ambiente GATEKEEPER_PASSWORD é obrigatória.")
 
-# Simple In-Memory Rate Limiter (No external DB needed)
-from collections import defaultdict
-import time
-login_attempts = defaultdict(list)
+# Simple Persistent Rate Limiting
+def is_rate_limited(key: str, event_type: str, max_attempts: int = 5, window_seconds: int = 60):
+    from datetime import timedelta
+    now = datetime.now(datetime.timezone.utc)
+    window_start = now - timedelta(seconds=window_seconds)
+    
+    with Session(engine) as session:
+        statement = select(func.count(SecurityLog.id)).where(
+            SecurityLog.key == key,
+            SecurityLog.event_type == event_type,
+            SecurityLog.timestamp >= window_start,
+            SecurityLog.success == False
+        )
+        count = session.exec(statement).one()
+        return count >= max_attempts
 
-def is_rate_limited(key: str, max_attempts: int = 5, window: int = 60):
-    now = time.time()
-    # Clean old attempts
-    login_attempts[key] = [t for t in login_attempts[key] if now - t < window]
-    if len(login_attempts[key]) >= max_attempts:
-        return True
-    login_attempts[key].append(now)
-    return False
+def log_security_event(key: str, event_type: str, success: bool, request: Request):
+    logger.warning(f"Security Event: {event_type} - Key: {key} - Success: {success} - IP: {request.client.host}")
+    with Session(engine) as session:
+        log = SecurityLog(
+            key=key,
+            event_type=event_type,
+            success=success,
+            ip_address=request.client.host,
+            user_agent=request.headers.get("user-agent")
+        )
+        session.add(log)
+        session.commit()
 
 def check_gatekeeper(request: Request):
     if request.cookies.get("gatekeeper_access") == "granted":
@@ -80,14 +121,17 @@ def check_gatekeeper(request: Request):
 
 @app.on_event("startup")
 def on_startup():
+    logger.info("Iniciando aplicação SIGDT...")
     os.makedirs("app/static", exist_ok=True)
     init_db()
     with Session(engine) as session:
         admin_user = user_actions.get_user(session, "admin")
         admin_pwd = os.getenv("ADMIN_PASSWORD")
         if not admin_pwd:
+            logger.error("ADMIN_PASSWORD não configurada!")
             raise ValueError("Variável de ambiente ADMIN_PASSWORD é obrigatória no startup.")
         if not admin_user:
+            logger.info("Criando usuário administrador padrão...")
             user_in = user_schemas.UserCreate(username="admin", email="admin@example.com", password=admin_pwd)
             admin_user = user_actions.create_user(session, user_in, role="admin")
         else:
@@ -97,6 +141,7 @@ def on_startup():
             admin_user.role = "admin"
             session.add(admin_user)
             session.commit()
+    logger.info("Startup concluído com sucesso.")
 
 
 # Static files and user routes
@@ -112,10 +157,14 @@ async def gatekeeper_page(request: Request):
 @app.post("/gatekeeper")
 async def gatekeeper_verify(request: Request, password: str = Form(...)):
     client_ip = request.client.host
-    if is_rate_limited(f"gatekeeper_{client_ip}"):
+    key = f"gatekeeper_{client_ip}"
+    
+    if is_rate_limited(key, "gatekeeper_attempt"):
+        log_security_event(key, "gatekeeper_attempt_blocked", False, request)
         raise HTTPException(status_code=429, detail="Muitas tentativas. Tente novamente em 1 minuto.")
 
     if password == GATEKEEPER_PASSWORD:
+        log_security_event(key, "gatekeeper_attempt", True, request)
         response = RedirectResponse(url="/", status_code=303)
         response.set_cookie(
             key="gatekeeper_access", 
@@ -544,6 +593,97 @@ async def update_master_directive(
     session.commit()
     
     return RedirectResponse(url="/master-directives", status_code=303)
+
+@app.get("/directives/new", response_class=HTMLResponse, dependencies=[Depends(get_current_inspetor_user)])
+async def new_directive_page(request: Request, current_user: User = Depends(get_current_inspetor_user)):
+    return templates.TemplateResponse("directive_new.html", {"request": request, "current_user": current_user})
+
+@app.post("/directives/new", dependencies=[Depends(get_current_inspetor_user)])
+async def create_new_directive(
+    request: Request,
+    matricula: str = Form(...),
+    numero_serie: str = Form(...),
+    fadt: str = Form(...),
+    codigo_diretiva: str = Form(...),
+    objetivo: str = Form(...),
+    classe: str = Form(...),
+    categoria: str = Form(...),
+    especialidades: List[str] = Form([]),
+    status: str = Form(...),
+    tendencia: int = Form(...),
+    observacao: Optional[str] = Form(None),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_inspetor_user)
+):
+    logger.info(f"Usuário {current_user.username} iniciando cadastro manual de diretiva {fadt} para aeronave {matricula}")
+    
+    # 1. Aeronave (Upsert)
+    matricula = matricula.strip().upper()
+    statement_aero = select(Aeronave).where(Aeronave.matricula == matricula)
+    aeronave = session.exec(statement_aero).first()
+    
+    if not aeronave:
+        aeronave = Aeronave(matricula=matricula, numero_serie=numero_serie.strip().upper())
+        session.add(aeronave)
+        session.flush()
+        logger.info(f"Nova aeronave cadastrada: {matricula}")
+    
+    # 2. Diretiva Master (Upsert)
+    fadt = fadt.strip().upper()
+    statement_dt = select(Diretiva).where(Diretiva.fadt == fadt)
+    master_dt = session.exec(statement_dt).first()
+    
+    dt_data = {
+        "codigo_diretiva": codigo_diretiva.strip(),
+        "fadt": fadt,
+        "objetivo": objetivo.strip(),
+        "classe": classe,
+        "categoria": categoria,
+        "especialidade": ";".join(especialidades)
+    }
+    
+    if not master_dt:
+        master_dt = Diretiva(**dt_data)
+        session.add(master_dt)
+        session.flush()
+        logger.info(f"Nova diretiva master cadastrada: {fadt}")
+    else:
+        # Update existing master data if needed
+        for key, value in dt_data.items():
+            setattr(master_dt, key, value)
+        session.add(master_dt)
+
+    # 3. Vínculo (Link)
+    statement_link = select(DiretivaAeronave).where(
+        DiretivaAeronave.aeronave_id == aeronave.id,
+        DiretivaAeronave.diretiva_id == master_dt.id
+    )
+    link = session.exec(statement_link).first()
+    
+    if not link:
+        link = DiretivaAeronave(
+            aeronave_id=aeronave.id,
+            diretiva_id=master_dt.id,
+            status=status,
+            tendencia=tendencia,
+            observacao=observacao
+        )
+        logger.info(f"Criando novo vínculo entre {matricula} e {fadt}")
+    else:
+        # Update existing link
+        link.status = status
+        link.tendencia = tendencia
+        link.observacao = observacao
+        logger.info(f"Atualizando vínculo existente entre {matricula} e {fadt}")
+    
+    link.data_status = datetime.now(datetime.timezone.utc)
+    link.calculate_gut()
+    
+    session.add(link)
+    session.commit()
+    
+    logger.info(f"Cadastro manual concluído com sucesso: {fadt} -> {matricula}")
+    return RedirectResponse(url="/", status_code=303)
 
 @app.get("/health")
 async def health_check():

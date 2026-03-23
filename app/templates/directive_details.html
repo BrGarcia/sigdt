@@ -8,6 +8,29 @@
     <link rel="icon" type="image/png" href="/static/img/favicon.png">
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        htmx.on('htmx:configRequest', function (evt) {
+            const csrfToken = getCookie('csrftoken');
+            if (csrfToken) {
+                evt.detail.headers['X-CSRFToken'] = csrfToken;
+            }
+        });
+    </script>
 </head>
 
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
@@ -47,7 +70,7 @@
                 <p><strong>Matrícula:</strong> {{ diretiva.aeronave.matricula }}</p>
                 <p><strong>SN Aeronave:</strong> {{ diretiva.aeronave.numero_serie }}</p>
                 <p><strong>Status Atual:</strong> {{ diretiva.status }}</p>
-                <p><strong>Especialidade:</strong> {{ diretiva.diretiva.especialidade or 'Não definida' }}</p>
+                <p><strong>Especialidade:</strong> {{ diretiva.diretiva.especialidade | format_especialidade_label }}</p>
                 <p><strong>GUT Score:</strong> {{ diretiva.gut }}</p>
             </div>
 
@@ -110,7 +133,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Especialidades Responsáveis (Master)</label>
                         <div class="p-2 bg-gray-100 rounded border text-sm text-gray-600">
-                            {{ diretiva.diretiva.especialidade.replace(';', ', ') if diretiva.diretiva.especialidade else 'Não definida' }}
+                            {{ diretiva.diretiva.especialidade | format_especialidade_label }}
                         </div>
                     </div>
                     <div>

@@ -59,3 +59,12 @@ class DiretivaAeronave(SQLModel, table=True):
         
         self.gut = g * u * t
         return self.gut
+
+class SecurityLog(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    key: str = Field(index=True) # e.g., 'login_ip_127.0.0.1' or 'gatekeeper_ip_...'
+    event_type: str = Field(index=True) # 'login_attempt', 'gatekeeper_attempt'
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)
+    success: bool = Field(default=False)
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None

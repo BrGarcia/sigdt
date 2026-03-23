@@ -73,18 +73,24 @@ def get_current_inspetor_user(current_user: models.User = Depends(get_current_us
 
 @router.post("/token")
 async def login_for_access_token(request: Request, response: Response, db: Session = Depends(get_session), form_data: OAuth2PasswordRequestForm = Depends()):
-    from app.main import is_rate_limited
+    from app.main import is_rate_limited, log_security_event
     client_ip = request.client.host
-    if is_rate_limited(f"login_{client_ip}"):
+    key = f"login_{client_ip}"
+    
+    if is_rate_limited(key, "login_attempt"):
+        log_security_event(key, "login_attempt_blocked", False, request)
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Muitas tentativas de login. Tente novamente em 1 minuto.")
 
     user = actions.get_user(db, username=form_data.username)
     if not user or not security.verify_password(form_data.password, user.hashed_password):
+        log_security_event(key, "login_attempt", False, request)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    log_security_event(key, "login_attempt", True, request)
     access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires

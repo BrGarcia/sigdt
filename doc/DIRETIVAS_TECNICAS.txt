@@ -1,0 +1,230 @@
+4.12 DIRETIVA TÉCNICA
+4.12.1 Os fabricantes dos aviões, seus motores e outros componentes desenvolvem inspeções,
+modificações ou melhorias nos seus itens com o objetivo de aperfeiçoar as operações, a
+confiabilidade e/ou os processos de manutenção. Isto é feito através de documentação
+específica de cada fabricante, dentro de modelo aprovado pela autoridade aeronáutica que
+certificou o projeto e o respectivo plano de gestão de configuração. Todas as documentações
+emitidas nesse contexto, seja pelo fabricante, pela autoridade aeronáutica reguladora ou pela
+FAB, são aqui denominadas de Diretiva Técnica (DT).
+4.12.1.1 Quando a realização de tais modificações ou inspeções envolverem segurança ou
+aeronavegabilidade, serão feitas especificamente através de Diretrizes de Aeronavegabilidade
+(DA), postas em circulação pelas autoridades aeronáuticas reguladoras. No caso de aeronave
+de uso militar apenas, isso será feito quando o fabricante, ou a autoridade governamental
+(nacional ou estrangeira) que certificou o projeto, emitir esse documento e caberá ao PAMA
+Central, coordenado com a DIRMAB, analisá-lo e, se aplicável à FAB, aprovar a respectiva
+DT, determinando a realização de inspeção ou modificação no âmbito do SISMA.
+4.12.1.2 Se tais aspectos de segurança ou aeronavegabilidade não estiverem envolvidos, a
+Subdivisão de Engenharia do PAMA Central avaliará o custo/benefício de incorporá-las pela
+comparação entre a despesa a ser realizada e os proveitos que serão obtidos em termos de
+redução das tarefas de manutenção, aprimoramento do desempenho, conveniência dos
+passageiros e outras vantagens que possam advir, desde que haja disponibilidade financeira.
+Caso opte por incorporá-las, o PAMA Central aprovará a respectiva DT.
+4.12.2 O PAMA Central, independente do fabricante ou autoridade reguladora, emitirá DT
+sempre que identificar necessidade de inspeção de monitorar uma condição que afete a
+segurança ou a aeronavegabilidade de um Projeto. Nesse caso, informará ao fabricante e/ou
+autoridade aeronáutica reguladora e buscará solução definitiva com o propósito de eliminar tal
+condição (modificação).
+4.12.3 DT será emitida pelo PAMA Central/Oficina de um Projeto e proverá instruções de
+atividades a serem efetuadas por Técnicos de Manutenção do COMAER ou por OFSM
+contratada para cumprir alteração única, modificação, verificação ou instalação de um novo
+equipamento, especificando os requisitos mínimos e fornecendo aos usuários um guia de
+realizá-la, devendo incluir materiais e EAS, caso sejam necessários. Faculta, também, que
+sejam feitas modificações provisórias ou experimentais em procedimentos de manutenção,
+inspeções ou execuções de serviços, emitidas normas de avaliação da performance de
+conjunto maiores, sistemas ou equipamentos pela primeira vez instalados em aviões ou EAS.
+4.12.4 As DT serão empregadas pelos PAMA Centrais sempre que uma tarefa, ainda não
+constante do Plano de Manutenção, tiver de ser cumprida em caráter mandatório em uma
+aeronave, EAS ou equipamento isolado, seja ela oriunda de informação do fabricante, de
+incidente ou acidente aeronáutico, de relato de Operadores, de estatística de dados do
+SILOMS ou de qualquer outra fonte confiável.
+4.12.5 Normalmente, as DT originadas fora do SISMA serão recebidas pela DIRMAB, que
+as distribuirá aos PAMA. Caso alguma seja recebida diretamente por estes, exceto aquelas de
+caráter imediato (emitidas, via de regra, por mensagens eletrônicas, e cadastradas no SILOMS
+por seu CDCP), eles a enviarão à DIRMAB com o intento de averiguar sua procedência e
+validade.
+4.12.6 As DT recebidas pelos PAMA e não aplicáveis aos Projetos apoiados pelos mesmos
+serão encaminhadas via CDCP à DIRMAB com esta informação.
+4.12.7 Genericamente, as DT são classificadas quanto à obrigatoriedade de incorporação,
+MANDATÓRIA OU RECOMENDADA, e quanto à premência com que devem ser
+incorporadas, IMEDIATA, URGENTE ou NORMAL.
+4.12.7.1 DT MANDATÓRIA é aquela cuja incorporação é necessária com o objetivo de
+garantir a segurança de voo dentro dos níveis estabelecidos originalmente para a aeronave ou
+EAS, ou seja, seu cumprimento é necessário para assegurar a aeronavegabilidade de aeronave
+ou o funcionamento seguro de EAS.
+4.12.7.2 DT RECOMENDADA (OU OPCIONAL) é aquela cuja incorporação implica em
+alguma melhoria operacional ou logística à aeronave ou EAS, como aprimoramento do
+desempenho, facilidade de operação ou de carregamento, redução de tarefas de manutenção,
+entre outras. Contudo, o seu não cumprimento não afeta a aeronavegabilidade da aeronave ou
+o nível de segurança de utilização do EAS. A decisão sobre sua aplicação será realizada com
+base em análise de custos e benefícios.
+4.12.7.3 DT IMEDIATA é aquela de caráter mandatório e deverá ser cumprida antes do
+próximo voo da aeronave ou funcionamento do EAS, em razão do elevado risco à segurança
+de voo ou uso decorrente do seu não cumprimento.
+4.12.7.4 DT URGENTE é aquela de caráter mandatório que prejudica a segurança de voo e
+que deverá ser executada em um prazo determinado, muito breve. No caso de DT emitidas
+pelo fabricante ou autoridade aeronáutica, o PAMA deverá seguir o prazo de incorporação
+estabelecido nesses documentos ou definir prazo menor, caso seja para atender condições
+operacionais ou logísticas da FAB. Prazos maiores somente poderão ser estabelecidos pelos
+PAMA com base em estudo de engenharia que indiquem que a operação na FAB os
+permitem.
+4.12.7.5 DT NORMAL é aquela de caráter recomendado cujo prazo de incorporação pode
+ser adequado para cumpri-la durante as inspeções programadas das aeronaves ou EAS.
+4.12.8 O Setor de Engenharia dos PAMA analisará todas as DT recebidas, independente da
+categoria de obrigatoriedade definida pela organização emissora da DT, e definirá quais são
+consideradas aplicáveis à frota FAB.
+4.12.8.1 Aquelas julgadas aplicáveis serão distribuídas no âmbito interno da FAB para
+incorporação mandatória, dentro da prioridade de aplicação (IMEDIATA, URGENTE ou
+NORMAL) estabelecida pelo PAMA. Assim, as DT elaboradas pelos PAMA (BT e IT), bem
+como aquelas emitidas pelo fabricante ou autoridade aeronáutica e aprovadas pelo PAMA,
+por meio de FADT, serão sempre de cumprimento obrigatório (MANDATÓRIA), podendo
+variar o grau de urgência estabelecido de sua incorporação.
+4.12.8.2 As DT não consideradas aplicáveis à frota FAB não serão distribuídas no âmbito
+interno do COMAER (Operadores, G/ESM e Linhas de Revisão e Oficinas dos PAMA). O
+motivo de sua não aplicabilidade será registrado na FADT de análise e a DT devolvida ao
+CDCP para arquivo. Uma cópia da DT também será arquivada na Subdivisão de Engenharia.
+4.12.9 Os PAMA Centrais/Oficinas aplicarão todas as DT IMEDIATA, URGENTE ou
+NORMAL em aeronave, EAS ou equipamento. Se o nível de manutenção de sua execução for
+Base ou Operador, poderá delegar a tarefa.
+4.12.10 As DT NORMAL terão a sua aplicação planejada pelo PAMA Central/Oficina
+dentro de inspeção programada oportuna da aeronave/equipamento/EAS, quando os recursos
+humanos e materiais estiverem disponíveis. O seu lançamento no LRA - LOG BOOK será
+realizado nessa oportunidade.
+4.12.11 O não cumprimento de DT de caráter IMEDIATO determina a paralisação de uma
+aeronave e/ou sua frota, observada que tal determinação deverá ser coordenada pelo PAMA
+Central com a DIRMAB.
+4.12.12 As DT MANDATÓRIA deverão ser incorporadas de acordo com o previsto pelo
+fabricante ou pela autoridade aeronáutica regulamentadora, desde que a aeronave ou item
+aeronáutico, discriminado na Diretiva, corresponda ao utilizado pela FAB (análise de
+aplicabilidade).
+4.12.13 Uma vez recebida pelos PAMA, as DT RECOMENDADA serão analisadas
+quanto à aplicabilidade em aeronaves ou equipamentos utilizados na FAB e aos aspectos
+técnicos e econômicos.
+4.12.14 As DT listarão:
+a) a sua razão;
+b) a sua aplicação;
+c) o prazo de seu cumprimento;
+d) o nível de sua execução;
+e) as circunstâncias de sua observância;
+f) a descrição das tarefas a cumprir. (Refletirão uma sequência lógica em sua
+realização);
+g) os desenhos ilustrativos, se preciso;
+h) a estimativa do tempo de sua aplicação; e
+i) o material e a mão de obra necessários. (Exporão materiais para efetuar os
+trabalhos, caso exigidos, e o grau de habilidade necessário.)
+4.12.15 A implantação e o pedido à Subdivisão de Suprimento do material de uma DT,
+caso pertinente, é de competência da Assessoria de Planejamento do PAMA Central/Oficina
+do Projeto.
+4.12.16 Uma DT NORMAL somente será distribuída aos setores de execução (Operadores,
+G/ESM e Linhas de Revisão e Oficinas dos PAMA) quando o material e os EAS necessários à
+sua incorporação estiverem disponíveis.
+4.12.17 Considerando a complexidade e diversidade dos assuntos analisados nas DT e
+FADT, suas deliberações pela Engenharia dos PAMA Central/Oficina poderão ser levadas a
+efeito com a participação de um Inspetor da área ou sistema em foco.
+4.12.18 As DT serão distribuídas pelos canais de publicações técnicas e, se preciso,
+permitirão sua reprodução local.
+4.12.19 Quando a aplicação de uma DT envolver recursos financeiros que extrapolem
+aqueles historicamente aplicados a um Projeto, antes da sua aprovação, exceto aquelas de
+caráter imediato, o PAMA Central dele encaminhará minuta de sua análise, feita através de
+FADT, a fim de a DIRMAB aprovar. Nela proporá um cronograma de aplicação e relatará os
+recursos financeiros necessários. A emissão e distribuição dessa DT pelo PAMA Central
+somente será realizada após o seu aceite. (Ver Figura 1 Página de Diretiva Técnica, Figura 2
+Página de Diretiva Técnica e Figura 3 Página de Aprovação de Diretiva Técnica do Anexo W
+- FORMULÁRIOS E FIGURAS.) Para aquelas IMEDIATA, este procedimento será feito em
+seguida à sua emissão.
+4.12.19.1 O parecer da DIRMAB, com publicação no BCA, somente será dado após
+disponibilidade de recursos financeiros para aplicar a DT em todas as aeronaves de uma frota
+que a exigir.
+4.12.20 Os PAMA Oficina e Operadores, estes via sua cadeia de Comando, poderão
+propor DT. Se uma delas oriunda de proposta do setor logístico afetar a área operacional, será
+submetida à apreciação de seu Comando antes de sua aprovação.
+4.12.21 A DT de origem interna na FAB obedecerá aos preceitos:
+4.12.21.1 Terá a possibilidade de ser arquivada em fichários (28 cm de altura por 20 cm de
+largura);
+4.12.21.2 Sua numeração será DT XXZZ-PPP RRRR GG, significando:
+a) DT - Diretiva Técnica (seguido de espaço);
+b) XX - sigla do Parque emitente;
+c) ZZ - dois últimos algarismos do ano (seguido de traço);
+d) PPP - número de ordem geral de DT seguido de espaço;
+e) RRRR - tipo de aeronave (tantos R quantos necessários seguidos de
+espaço);
+f) GG - número de ordem da DT para a aeronave em questão.
+Ex.: DT GL04-050 C130H 05, isto é, DT emitida pelo PAMA GL em
+2004, sendo a quinquagésima emitida até aquela data e a quinta expedida
+para a aeronave C-130H.
+NOTA
+Identificar as revisões das DT, em seguida ao seu número original,
+acrescentando Rev. 01, Rev. 02 ou Rev. 03, sequencialmente, para 1ª, 2ª ou 3ª revisão.
+4.12.21.3 O texto da DT conterá determinados tópicos obrigatoriamente. Entre eles, na
+sequência apresentada, os seguintes:
+a) OBJETIVO. Descreverá de modo sucinto do que trata a DT;
+b) RAZÃO DA MODIFICAÇÃO. Fará breve narração do motivo de sua
+emissão e dos documentos mais importantes que abordam o assunto, como
+ofícios, itens de ação de ROP e outros;
+c) APLICAÇÃO. Informará o tipo de aeronave, conjunto maior ou parte em
+que ela será aplicada. (Utilizar a forma, quanto ao equipamento e quanto à
+aeronave);
+d) CUMPRIMENTO. Estabelecerá se a aplicação é MANDATÓRIA ou
+RECOMENDADA e as datas limites para levá-la a efeito;
+e) NÍVEL DE EXECUÇÃO. Designará o nível responsável por executar a sua
+efetivação;
+f) DESCRIÇÃO. Detalhará todos os passos para realizar o serviço;
+g) DESENHOS. Mostrará aqueles necessários a fim de melhorar o seu
+entendimento;
+h) MATERIAL E MÃO DE OBRA. Discriminará todo material necessário,
+inclusive aquele de classe geral, e comunicará o número de H/h necessários
+à sua incorporação em uma aeronave, acessório ou componente;
+i) FERRAMENTAS ESPECÍFICAS. Enunciará aquelas essenciais ao seu
+cumprimento;
+j) PESO E BALANCEAMENTO. Reportará o peso acrescentado ou retirado
+e o momento aplicado, quando for o caso;
+k) VOO DE EXPERIÊNCIA. Especificará os ensaios a serem praticados, se
+necessários, inclusive cheques funcionais e/ou operacionais;
+l) PUBLICAÇÕES TÉCNICAS ENVOLVIDAS. Relacionará as publicações
+técnicas afetadas, informando o seu número, título/descrição, data da
+publicação básica, número e data da revisão;
+m) DISTRIBUIÇÃO. Relatará os Órgãos a quem o seu conhecimento será
+dado no âmbito interno e externo da OM emitente e total de exemplares a
+serem distribuídos;
+n) ALTERAÇÕES. Exporá as informações sobre revisão total da publicação,
+revisão parcial da publicação, revisão de página, revisão de desenho,
+cancelamento de publicação e outras informações julgadas indispensáveis;
+e
+o) ANEXOS. Documentação que seja de relevância na execução da DT.
+4.12.22 Os PAMA Oficina enviarão ao PAMA Central uma cópia de toda DT emitida ou
+analisada de Projeto apoiado.
+4.12.23 Os PAMA Central e Oficina receberão da DIRMAB as DT referentes aos
+componentes e acessórios de seu PTA para análise.
+4.12.24 Toda DT distribuída pela DIRMAB terá carimbo ou equivalente eletrônico do seu
+setor de Documentação Técnica, o que determinará a análise da DT pelos PAMA
+Central/Oficina.
+4.12.25 Os Operadores manterão no Setor de Publicações Técnicas as DT em vigência.
+4.12.26 Os Operadores informarão mensalmente por escrito, preferencialmente via
+mensagem rádio, os números das DT incorporadas por aeronave ou equipamento ao PAMA
+Central e ao PAMA Oficina, respectivamente. Este procedimento será adotado até a
+introdução deste controle no SILOMS.
+4.12.26.1 Auditoria da Configuração. Com base nessas informações e naquelas existentes no
+SILOMS relativas à incorporação de DT, a DIRMAB e os PAMA Central/Oficina auditarão
+aleatoriamente a situação da configuração das aeronaves de uma UAe antes de fazer uma
+VAT ou ROP ou em outra oportunidade julgada conveniente.
+4.12.27 Contabilidade da Configuração. Os PAMA Central/Oficina manterão o controle
+por aeronave e/ou por acessório do cumprimento de DT executada em suas Oficinas, nos
+Operadores e nas OFSM.
+4.12.28 Controle da Configuração. Os PAMA Central/Oficina elaborarão e distribuirão à
+DIRMAB uma vez por ano, até 30 de março, uma TMA (índice) contendo a relação
+atualizada das DT emitidas de cada Projeto apoiado, contendo as seguintes informações: tipo
+de DT (MANDATÓRIA ou RECOMENDADA), prazo de cumprimento (IMEDIATA,
+URGENTE ou NORMAL), situação da análise, aplicabilidade à FAB, parecer do PAMA
+(aprovada ou rejeitada), situação quanto à disponibilidade de material, custos envolvidos e
+período planejado de sua incorporação. Naquelas ainda sem análise, o PAMA deverá
+apresentar uma estimativa de prazo de finalização. Esse documento será acompanhado do
+respectivo arquivo digital.
+4.12.29 As atividades de controle, contabilidade e auditoria da configuração constituem a
+atividade de Gestão de Configuração de uma frota de aeronaves.
+
+4.13 FICHA DE ANÁLISE DE DIRETIVA TÉCNICA (FADT)
+4.13.1 A análise das DT será realizada por meio do preenchimento da FADT, de modo a
+padronizar essa atividade e assegurar que todos os aspectos técnicos e logísticos envolvidos
+em uma DT sejam considerados. Os campos da FADT e o seu preenchimento constam da
+Figura 4 Ficha de Análise de Diretiva Técnica, Figura 5 Ficha de Análise de Diretiva Técnica
+- continuação. Figura 6 Ficha de Análise de Diretiva Técnica - continuação e Figura 7 Ficha
+de Análise de Diretiva Técnica - continuação do Anexo W - FORMULÁRIOS E FIGURAS

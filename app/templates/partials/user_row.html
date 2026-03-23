@@ -1,5 +1,5 @@
 <div class="flex justify-between items-center p-2 border-b">
-    <span>{{ user.username }} ({{ user.role }}) - {{ user.especialidade or 'Sem especialidade' }}</span>
+    <span>{{ user.username }} ({{ user.role }}) - {{ user.especialidade | format_especialidade_label }}</span>
     {% if user.role != 'admin' %}
     <button hx-delete="/users/{{ user.id }}" hx-target="closest div" hx-swap="delete" class="text-red-500 hover:text-red-700 font-bold px-2 py-1" title="Apagar Usuário" hx-confirm="Tem certeza que deseja apagar este usuário?">X</button>
     {% endif %}

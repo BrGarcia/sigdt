@@ -1,27 +1,41 @@
-# Próximos Passos e Bugs (V3.0.0 e Versões Futuras)
+# Roadmap de Evolução (SIGDT)
 
-Este documento consolida as falhas não sanadas na Versão 2.0.0 em virtude de requererem implementações de middlewares extras pesados, e propõe o Roadmap claro para o prosseguimento futuro do projeto.
-
----
-
-## Auditoria de Segurança - Remanescentes
-
-### 1. Sem proteção CSRF (global)
-**Ameaça (Alto):** O projeto depende de cookies para autenticação (JWT + Gatekeeper), mas não implementa proteção CSRF nativa robusta a um nível global. Formulários POST podem ser forjados se rodando em subdomínios expostos ou cliques maliciosos.
-**Correção Planejada (V3.0.0):** Implementar um middleware padrão CSRF (ex: `Starlette CSRFMiddleware`) e despachar tokens no Front-End dentro do escopo HTMX (`hx-headers`).
-
-### 2. Dicionário `login_attempts` em Memória Volátil
-**Ameaça (Médio):** A mitigação de Força Bruta atual zera contagens caso o container sofra restart, permitindo ataques intercalados com desligamentos.
-**Correção Planejada (V3.0.0):** Trocar em-memória (Dict Python) por armazenamento persistente (Redis cache ou SQLite atrelado).
-
-### 3. Ausência de logging centralizado estruturado
-**Ameaça (Baixo):** Erros no parser (PyMuPDF) e no importador CSV caem inertes, exigindo busca cega via console (stdout) para depuração.
-**Correção Planejada:** Aplicar o framework de Logging standard (`import logging`) injetando arquivos de texto rotativos no servidor de produção.
+Este documento consolida as metas alcançadas e os próximos passos para o SIGDT.
 
 ---
 
-## Novos Casos de Uso Esperados
+## ✅ Versão 3.0.0 (Segurança & Infraestrutura) - CONCLUÍDA
+Foco em robustez, segurança e persistência de dados administrativos.
 
-- [ ] **Integração Real-Time:** WebSocket para aviso se dois inspetores estão editando a mesma aeronave simultaneamente.
-- [ ] **Multi-Ambientes (Hangar X / Y):** Dividir a base de dados em instâncias para bases operacionais independentes sem cruzar dados de aviões de hangares ou localizações distintas.
-- [ ] **Camada Visual:** Gráficos e Analytics unificados gerados sobre as tendências e GUT da frota.
+- [x] **Blindagem Global (Anti-CSRF):** Middleware CSRF implementado com tokens integrados em HTMX e formulários tradicionais.
+- [x] **Persistência de Segurança:** Rate limiting de login e gatekeeper migrado para banco de dados (`SecurityLog`).
+- [x] **Centralização de Especialidades:** Criada classe `Especialidade` (fonte da verdade) e filtros dinâmicos em todos os templates.
+- [x] **Observabilidade (Logging Estruturado):** Implementado logging com rotação de arquivos e auditoria de eventos críticos.
+- [x] **Inserção Manual:** Funcionalidade de cadastro individual de diretivas com lógica de Upsert.
+
+---
+
+## 🎯 Sprint Atual: Versão 3.1.0 (Usabilidade & Performance)
+
+### 1. Performance de Dados
+- [ ] **Otimização de Importação:** Implementar processamento em background (ou lotes maiores) para CSVs com > 5000 linhas.
+- [ ] **Cache de Dashboard:** Implementar cache simples para a contagem de páginas e estatísticas do dashboard.
+
+### 2. Interface e UX
+- [ ] **Feedback de Erro no Parser:** Melhorar a mensagem de erro quando o PDF não segue o padrão (ex: sem OCR ou formato inválido).
+- [ ] **Confirmação de Ações:** Adicionar modais de confirmação via HTMX para exclusão de anexos e usuários.
+- [ ] **Busca Avançada:** Adicionar filtros por intervalo de datas e range de GUT.
+
+---
+
+## 🚀 Próximas Fases (Roadmap de Longo Prazo)
+
+- [ ] **Dashboards Visuais:** Integração com Chart.js para visualização da Matriz GUT da frota.
+- [ ] **Multi-Tenancy:** Separação lógica de dados por Base Operacional (Hangar).
+- [ ] **Notificações:** Alertas de diretivas críticas (GUT > 15) via E-mail ou Telegram.
+
+---
+
+## 🐛 Bugs Conhecidos & Débitos Técnicos
+- [ ] **Refactor Templates:** Criar um `base.html` para evitar repetição de scripts (CSRF, Logout) em todos os templates.
+- [ ] **Testes de Unidade:** Expandir a cobertura de testes para os novos serviços de log e constantes.

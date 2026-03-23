@@ -9,8 +9,27 @@
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+        // Function to get CSRF token from cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
         htmx.on('htmx:configRequest', function (evt) {
-            // HTMX will automatically include cookies
+            const csrfToken = getCookie('csrftoken');
+            if (csrfToken) {
+                evt.detail.headers['X-CSRFToken'] = csrfToken;
+            }
         });
     </script>
 </head>
@@ -54,30 +73,12 @@
                             <div class="space-y-2 border rounded-lg px-4 py-2 bg-white">
                                 <label class="text-sm font-semibold text-gray-700 block mb-2">Especialidades</label>
                                 <div class="grid grid-cols-2 gap-2">
+                                    {% for code in Especialidade.list_codes() %}
                                     <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
-                                        <input type="checkbox" name="especialidade" value="ELT" class="rounded text-blue-600 focus:ring-blue-500">
-                                        <span>ELT</span>
+                                        <input type="checkbox" name="especialidade" value="{{ code }}" class="rounded text-blue-600 focus:ring-blue-500">
+                                        <span>{{ code }}</span>
                                     </label>
-                                    <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
-                                        <input type="checkbox" name="especialidade" value="ELE" class="rounded text-blue-600 focus:ring-blue-500">
-                                        <span>ELE</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
-                                        <input type="checkbox" name="especialidade" value="HID" class="rounded text-blue-600 focus:ring-blue-500">
-                                        <span>HID</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
-                                        <input type="checkbox" name="especialidade" value="CEL" class="rounded text-blue-600 focus:ring-blue-500">
-                                        <span>CEL</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
-                                        <input type="checkbox" name="especialidade" value="MOT" class="rounded text-blue-600 focus:ring-blue-500">
-                                        <span>MOT</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
-                                        <input type="checkbox" name="especialidade" value="EST" class="rounded text-blue-600 focus:ring-blue-500">
-                                        <span>EST</span>
-                                    </label>
+                                    {% endfor %}
                                 </div>
                             </div>
                             {% endif %}
@@ -118,6 +119,15 @@
                     <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                         <h2 class="text-xl font-bold text-gray-800">Diretivas Técnicas</h2>
                         <div class="flex space-x-2">
+                            {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspetor') %}
+                            <a href="/directives/new"
+                                class="inline-flex items-center px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white text-sm font-medium rounded-md shadow-sm transition-colors">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                Cadastrar DT
+                            </a>
+                            {% endif %}
                             {% if current_user %}
                             <a href="/export/xlsx"
                                 class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors">
@@ -159,6 +169,23 @@
     </footer>
     {% if current_user %}
     <script>
+        // Inject CSRF token into traditional forms
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = getCookie('csrftoken');
+            if (token) {
+                const forms = document.querySelectorAll('form[method="post"]');
+                forms.forEach(form => {
+                    if (!form.querySelector('input[name="csrf-token"]')) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'csrf-token';
+                        input.value = token;
+                        form.appendChild(input);
+                    }
+                });
+            }
+        });
+
         document.getElementById('logout-button').addEventListener('click', async function () {
             try {
                 const response = await fetch('/users/logout', { method: 'POST' });

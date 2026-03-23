@@ -6,6 +6,22 @@
     <title>Acesso Restrito - SIGDT</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
 </head>
 <body class="bg-black flex items-center justify-center h-screen">
     <div class="w-full max-w-md bg-gray-900 rounded-lg shadow-2xl p-8 border border-gray-800">
@@ -32,6 +48,25 @@
                 ENTRAR NO SISTEMA
             </button>
         </form>
+        
+        <script>
+            // Inject CSRF token into traditional forms
+            document.addEventListener('DOMContentLoaded', function() {
+                const token = getCookie('csrftoken');
+                if (token) {
+                    const forms = document.querySelectorAll('form[method="post"]');
+                    forms.forEach(form => {
+                        if (!form.querySelector('input[name="csrf-token"]')) {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = 'csrf-token';
+                            input.value = token;
+                            form.appendChild(input);
+                        }
+                    });
+                }
+            });
+        </script>
         
         <div class="mt-8 text-center text-gray-600 text-[10px] tracking-tight">
             PROPRIEDADE RESTRITA. O ACESSO NÃO AUTORIZADO É MONITORADO.

@@ -29,11 +29,20 @@ Passos recomendados:
 7. Gerar uma versão canônica do número da diretiva
 
 Exemplos de normalização:
-- " bo nº: 314-002/24 " -> "BO Nº 314-002/24"
+- "bs314-002/24 " -> "BS 314-002/24"
+- "bo nº: 314-002/24 " -> "BO 314-002/24"
 - "ETD: gtn-0641/2013" -> "ETD GTN-0641/2013"
 - "IT LS 22 320 A29 021" -> "IT LS 22 320 A29 021"
 
-Caso o número seja muito heterogêneo, a coluna original deve ser preservada em um campo bruto, e a versão tratada deve ser salva em outro campo.
+Em resumo os únicos caracteres a serem usados são LETRAS, NÚMERO(0123456780), ESPACO " ", TRAÇO "-" e BARRA "/"
+o padrao do formato fica:
+- BO XXX-XXX-XX
+- BS XXX-XX-XXXX
+- BT LS XX-XXX-A-29-XXX
+- ETD XXXX-XXX-XXXXXX
+- ETD GPO XXXX-XXXX
+- IT LS XX-XXX-A-29-XXX
+- NOP XXX-XX-XXXX
 
 4. ESTRUTURA RECOMENDADA DE DADOS
 
