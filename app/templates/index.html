@@ -119,7 +119,7 @@
                         <h2 class="text-xl font-bold text-gray-800">Diretivas Técnicas</h2>
                         <div class="flex space-x-2">
                             {% if current_user %}
-                            <a href="/export/xlsx"
+                            <a id="export-link" href="/export/xlsx"
                                 class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -145,6 +145,7 @@
     </footer>
     {% if current_user %}
     <script>
+        // Logout logic
         document.getElementById('logout-button').addEventListener('click', async function () {
             try {
                 const response = await fetch('/users/logout', { method: 'POST' });
@@ -156,6 +157,34 @@
                 window.location.href = '/login';
             }
         });
+
+        // Sync Export Link with Filters
+        const filterForm = document.getElementById('filter-form');
+        const exportLink = document.getElementById('export-link');
+
+        if (filterForm && exportLink) {
+            const updateExportLink = () => {
+                const formData = new FormData(filterForm);
+                const params = new URLSearchParams();
+                
+                for (const [key, value] of formData.entries()) {
+                    if (value) {
+                        params.append(key, value);
+                    }
+                }
+                
+                exportLink.href = `/export/xlsx?${params.toString()}`;
+            };
+
+            filterForm.addEventListener('change', updateExportLink);
+            filterForm.addEventListener('keyup', (e) => {
+                // Delay to match HTMX delay if desired, or just immediate
+                updateExportLink();
+            });
+            
+            // Initial sync
+            updateExportLink();
+        }
     </script>
     {% endif %}
 </body>

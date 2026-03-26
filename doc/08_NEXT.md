@@ -6,6 +6,11 @@ Este documento consolida as metas para a Versão 3.0.0, focando em robustez, seg
 
 ## 🎯 Sprint Atual: Versão 3.0.0 (Segurança & Infraestrutura)
 
+### ✅ Itens Concluídos
+*   **Exportação Inteligente:** Implementada a exportação XLSX vinculada aos filtros do dashboard.
+*   **Nomenclatura Dinâmica:** Arquivos gerados agora herdam o nome do termo de busca aplicado.
+*   **Enriquecimento de Dados:** Adicionado o campo `Objetivo` (descrição técnica) no relatório exportado.
+
 ### 1. Blindagem Global (Anti-CSRF)
 *   [ ] **Implementação:** Adicionar `Starlette CSRFMiddleware` ao FastAPI.
 *   [ ] **Integração HTMX:** Configurar `hx-headers` em todas as requisições AJAX para incluir o token CSRF.

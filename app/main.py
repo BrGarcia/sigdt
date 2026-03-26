@@ -191,6 +191,32 @@ async def upload_csv(
         process_csv(content.decode('utf-8'))
     return RedirectResponse(url="/", status_code=303)
 
+def apply_filters(statement, search: Optional[str] = None, status: Optional[str] = None, especialidade: List[str] = []):
+    if search:
+        search_filter = f"%{search}%"
+        # Import Diretiva, Aeronave, or_ here if needed or use from outer scope
+        from app.models import Diretiva, Aeronave, DiretivaAeronave
+        from sqlmodel import or_
+        statement = statement.where(
+            or_(
+                Aeronave.numero_serie.like(search_filter), 
+                Diretiva.codigo_diretiva.like(search_filter),
+                Aeronave.matricula.like(search_filter)
+            )
+        )
+        
+    if status:
+        from app.models import DiretivaAeronave
+        statement = statement.where(DiretivaAeronave.status == status)
+        
+    if especialidade:
+        from app.models import Diretiva
+        from sqlmodel import or_
+        conditions = [Diretiva.especialidade.like(f"%{esp}%") for esp in especialidade if esp]
+        if conditions:
+            statement = statement.where(or_(*conditions))
+    return statement
+
 @app.get("/directives", response_class=HTMLResponse)
 async def list_directives(
     request: Request, 
@@ -207,24 +233,7 @@ async def list_directives(
     offset = (page - 1) * per_page
     
     statement = select(DiretivaAeronave).join(Diretiva).join(Aeronave).order_by(desc(DiretivaAeronave.gut))
-    
-    if search:
-        search_filter = f"%{search}%"
-        statement = statement.where(
-            or_(
-                Aeronave.numero_serie.like(search_filter), 
-                Diretiva.codigo_diretiva.like(search_filter),
-                Aeronave.matricula.like(search_filter)
-            )
-        )
-        
-    if status:
-        statement = statement.where(DiretivaAeronave.status == status)
-        
-    if especialidade:
-        conditions = [Diretiva.especialidade.like(f"%{esp}%") for esp in especialidade if esp]
-        if conditions:
-            statement = statement.where(or_(*conditions))
+    statement = apply_filters(statement, search, status, especialidade)
     
     count_statement = select(func.count()).select_from(statement.subquery())
     total_count = session.exec(count_statement).one()
@@ -411,8 +420,15 @@ async def manage_users_page(request: Request, session: Session = Depends(get_ses
     return templates.TemplateResponse("user_management.html", {"request": request, "users": users, "current_user": current_user})
 
 @app.get("/export/xlsx", dependencies=[Depends(get_current_user)])
-async def export_xlsx(session: Session = Depends(get_session)):
-    statement = select(DiretivaAeronave).join(Diretiva).join(Aeronave)
+async def export_xlsx(
+    session: Session = Depends(get_session),
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+    especialidade: List[str] = Query(None)
+):
+    statement = select(DiretivaAeronave).join(Diretiva).join(Aeronave).order_by(desc(DiretivaAeronave.gut))
+    statement = apply_filters(statement, search, status, especialidade)
+    
     links = session.exec(statement).all()
     
     def sanitize_formula(value):
@@ -431,6 +447,7 @@ async def export_xlsx(session: Session = Depends(get_session)):
             'STATUS': sanitize_formula(link.status),
             'CLA': sanitize_formula(link.diretiva.classe),
             'CAT': sanitize_formula(link.diretiva.categoria),
+            'OBJETIVO': sanitize_formula(link.diretiva.objetivo),
             'ESPECIALIDADE': sanitize_formula(link.diretiva.especialidade),
             'OBSERVACOES': sanitize_formula(link.observacao),
             'GUT': link.gut
@@ -447,10 +464,22 @@ async def export_xlsx(session: Session = Depends(get_session)):
     
     output.seek(0)
     
+    # Define o nome do arquivo com base nos filtros
+    filename = "diretivas_tecnicas.xlsx"
+    if search:
+        import re
+        # Remove caracteres inválidos para Windows/Unix
+        safe_name = re.sub(r'[\\/*?:"<>|]', "", search).strip()
+        filename = f"{safe_name}.xlsx" if safe_name else "busca.xlsx"
+    elif status:
+        filename = f"status_{status}.xlsx"
+    elif especialidade:
+        filename = f"{'-'.join(especialidade)}.xlsx"
+    
     return StreamingResponse(
-        output, 
+        output,
         media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        headers={'Content-Disposition': 'attachment; filename="diretivas_tecnicas.xlsx"'}
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'}
     )
 
 @app.get("/master-directives", response_class=HTMLResponse, dependencies=[Depends(get_current_inspetor_user)])
