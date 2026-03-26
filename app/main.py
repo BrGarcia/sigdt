@@ -149,7 +149,7 @@ async def read_root(
     
     # Count total
     total_count = session.exec(select(func.count(DiretivaAeronave.id))).one()
-    total_pages = (total_count + per_page - 1) // per_page
+    total_pages = max(1, (total_count + per_page - 1) // per_page)
 
     statement = select(DiretivaAeronave).order_by(desc(DiretivaAeronave.gut)).offset(offset).limit(per_page)
     diretiva_links = session.exec(statement).all()
@@ -226,14 +226,17 @@ async def list_directives(
         if conditions:
             statement = statement.where(or_(*conditions))
     
-    # For simplicity in HTMX updates, we might not show pagination inside the partial yet
-    # but let's at least respect the limit
+    count_statement = select(func.count()).select_from(statement.subquery())
+    total_count = session.exec(count_statement).one()
+    total_pages = max(1, (total_count + per_page - 1) // per_page)
+    
     diretiva_links = session.exec(statement.offset(offset).limit(per_page)).all()
     
     return templates.TemplateResponse("partials/directives_table.html", {
         "request": request, 
         "diretivas": diretiva_links,
-        "page": page
+        "page": page,
+        "total_pages": total_pages
     })
 
 @app.get("/directives/{diretiva_id}", response_class=HTMLResponse)
