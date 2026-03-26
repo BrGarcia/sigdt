@@ -123,8 +123,7 @@ def create_user(
     
     # Return HTML fragment for HTMX to append to the list
     from app.main import templates
-    return templates.TemplateResponse("partials/user_row.html", {
-        "request": request,
+    return templates.TemplateResponse(request=request, name="partials/user_row.html", context={
         "user": new_user
     })
 

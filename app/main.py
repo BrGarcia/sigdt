@@ -107,7 +107,7 @@ app.include_router(user_routes.router)
 
 @app.get("/gatekeeper", response_class=HTMLResponse)
 async def gatekeeper_page(request: Request):
-    return templates.TemplateResponse("gatekeeper.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="gatekeeper.html", context={})
 
 @app.post("/gatekeeper")
 async def gatekeeper_verify(request: Request, password: str = Form(...)):
@@ -132,7 +132,7 @@ async def gatekeeper_verify(request: Request, password: str = Form(...)):
 async def login_page(request: Request):
     if not check_gatekeeper(request):
         return RedirectResponse(url="/gatekeeper")
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="login.html", context={})
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(
@@ -154,8 +154,7 @@ async def read_root(
     statement = select(DiretivaAeronave).order_by(desc(DiretivaAeronave.gut)).offset(offset).limit(per_page)
     diretiva_links = session.exec(statement).all()
     
-    return templates.TemplateResponse("index.html", {
-        "request": request, 
+    return templates.TemplateResponse(request=request, name="index.html", context={
         "diretivas": diretiva_links,
         "current_user": current_user,
         "page": page,
@@ -241,8 +240,7 @@ async def list_directives(
     
     diretiva_links = session.exec(statement.offset(offset).limit(per_page)).all()
     
-    return templates.TemplateResponse("partials/directives_table.html", {
-        "request": request, 
+    return templates.TemplateResponse(request=request, name="partials/directives_table.html", context={
         "diretivas": diretiva_links,
         "page": page,
         "total_pages": total_pages
@@ -262,8 +260,7 @@ async def get_directive_details(
     if not link:
         raise HTTPException(status_code=404, detail="Vínculo de Diretiva not found")
     
-    return templates.TemplateResponse("directive_details.html", {
-        "request": request,
+    return templates.TemplateResponse(request=request, name="directive_details.html", context={
         "diretiva": link,
         "current_user": current_user
     })
@@ -350,8 +347,7 @@ async def update_directive_details(
     session.commit()
     session.refresh(link)
     
-    return templates.TemplateResponse("directive_details.html", {
-        "request": request,
+    return templates.TemplateResponse(request=request, name="directive_details.html", context={
         "diretiva": link,
         "current_user": current_user
     })
@@ -386,8 +382,7 @@ async def delete_attachment(
         session.commit()
         session.refresh(link)
     
-    return templates.TemplateResponse("directive_details.html", {
-        "request": request,
+    return templates.TemplateResponse(request=request, name="directive_details.html", context={
         "diretiva": link,
         "current_user": current_user
     })
@@ -407,8 +402,7 @@ async def update_tendencia(
         session.commit()
         session.refresh(link)
     
-    return templates.TemplateResponse("partials/directive_row.html", {
-        "request": request,
+    return templates.TemplateResponse(request=request, name="partials/directive_row.html", context={
         "diretiva": link
     })
 
@@ -417,7 +411,7 @@ async def manage_users_page(request: Request, session: Session = Depends(get_ses
     if not check_gatekeeper(request):
         return RedirectResponse(url="/gatekeeper")
     users = session.exec(select(User)).all()
-    return templates.TemplateResponse("user_management.html", {"request": request, "users": users, "current_user": current_user})
+    return templates.TemplateResponse(request=request, name="user_management.html", context={"users": users, "current_user": current_user})
 
 @app.get("/export/xlsx", dependencies=[Depends(get_current_user)])
 async def export_xlsx(
@@ -514,8 +508,7 @@ async def list_master_directives(
     
     master_directives = session.exec(statement.offset(offset).limit(per_page)).all()
     
-    return templates.TemplateResponse("master_directives.html", {
-        "request": request, 
+    return templates.TemplateResponse(request=request, name="master_directives.html", context={
         "directives": master_directives,
         "current_user": current_user,
         "page": page,
@@ -534,8 +527,7 @@ async def get_master_directive_edit(
     if not master_dt:
         raise HTTPException(status_code=404, detail="Diretiva Master not found")
     
-    return templates.TemplateResponse("master_directive_edit.html", {
-        "request": request,
+    return templates.TemplateResponse(request=request, name="master_directive_edit.html", context={
         "directive": master_dt,
         "current_user": current_user
     })
