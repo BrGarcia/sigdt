@@ -8,10 +8,16 @@
 - [x] **C1** — `requirements.txt` reescrito com 22 dependências pinadas via `pip freeze` (build reprodutível).
 - [x] **C2** — Corrigido `AttributeError` em `app/main.py` (linhas 292 e 310): `datetime.now(datetime.timezone.utc)` → `datetime.now(timezone.utc)`.
 - [x] **C3** — `logs.txt` adicionado ao `.gitignore` (evitar commit de stack traces sensíveis).
-- [ ] **A2** — Comparação segura no Gatekeeper (`hmac.compare_digest`)
-- [ ] **A3** — Assinar cookie do Gatekeeper com SECRET_KEY
-- [ ] **A6** — Validar inputs nos schemas Pydantic
-- [ ] **A7** — Criar Enum de status e validar no backend
+- [x] **A2** — Comparação segura no Gatekeeper (`hmac.compare_digest`)
+- [x] **A3** — Assinar cookie do Gatekeeper com SECRET_KEY (Assinatura JWT)
+- [x] **A6** — Validar inputs nos schemas Pydantic (UserCreate com validações robustas)
+- [x] **A7** — Criar Enum de status e validar no backend (StatusDiretiva)
+
+#### 📅 Observaçoes feitas pelo usuario:
+- [x] Sincronização de especialidades (Carreira vs. Área Técnica).
+- [x] Mapeamento de permissões implementado (Baseado na tabela de carreiras).
+
+
 
 ---
 

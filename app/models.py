@@ -2,6 +2,13 @@ from typing import Optional, List
 from sqlmodel import SQLModel, Field, Column, Relationship
 from sqlalchemy import Text, UniqueConstraint
 from datetime import datetime, timezone
+from enum import Enum
+
+class StatusDiretiva(str, Enum):
+    PENDENTE = "Pendente"
+    EM_ANDAMENTO = "Em andamento"
+    CONCLUIDA = "Concluída"
+    NAO_APLICAVEL = "Não aplicável"
 
 class Aeronave(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

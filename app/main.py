@@ -10,10 +10,13 @@ import io
 import pandas as pd
 from sqlmodel import Session, select, desc, or_, func
 from datetime import datetime, timezone
+import hmac
+import time
+from jose import jwt
 from typing import List, Optional
 
 from app.database import init_db, get_session, engine
-from app.models import Diretiva, Aeronave, DiretivaAeronave
+from app.models import Diretiva, Aeronave, DiretivaAeronave, StatusDiretiva
 from app.services.csv_service import process_csv
 from app.services.pdf_parser import parse_at_pdf
 
@@ -32,12 +35,14 @@ def format_especialidade(esp_string: str):
     if not esp_string:
         return []
     mapping = {
-        'ELETRÔNICA': 'ELT', 'ELETRONICA': 'ELT', 'ELT': 'ELT',
-        'ELÉTRICA': 'ELE', 'ELETRICA': 'ELE', 'ELE': 'ELE',
         'MOTORES': 'MOT', 'MOT': 'MOT',
-        'CÉLULA': 'CEL', 'CELULA': 'CEL', 'CEL': 'CEL',
-        'HIDRÁULICA': 'HID', 'HIDRAULICA': 'HID', 'HID': 'HID',
+        'CÉLULA': 'CEL', 'CEL': 'CEL',
+        'HIDRÁULICA': 'HID', 'HID': 'HID',
+        'ELETRÔNICA': 'ELT', 'ELT': 'ELT',
+        'ELÉTRICA': 'ELE', 'ELE': 'ELE',
+        'PINTURA': 'EST', 'ESTRUTURA': 'EST', 'EST': 'EST',
         'EQUIPAMENTO DE VOO': 'EQV', 'EQV': 'EQV',
+        'ARMAMENTO': 'ARM', 'ARM': 'ARM',
         'TODAS': 'TODAS'
     }
     parts = [p.strip().upper() for p in esp_string.split(';')]
@@ -46,11 +51,39 @@ def format_especialidade(esp_string: str):
         if not p: continue
         codes.add(mapping.get(p, p))
             
-    core = {'ELT', 'ELE', 'MOT', 'CEL', 'HID', 'EQV'}
+    core = {'MOT', 'CEL', 'HID', 'ELT', 'ELE', 'EST', 'EQV', 'ARM'}
     if core.issubset(codes) or 'TODAS' in codes:
         return ['TODAS']
         
     return sorted(list(codes))
+
+def has_specialty_permission(user: User, directive_specs_string: str) -> bool:
+    if user.role == 'admin':
+        return True
+    
+    # Mapeamento: Carreira do Inspetor -> Áreas da Diretiva autorizadas
+    mapping = {
+        "BMA": ["MOT", "CEL", "HID"],
+        "BET": ["ELT"],
+        "BEI": ["ELE"],
+        "BEP": ["EST"],
+        "BEV": ["EQV"],
+        "BMB": ["ARM"]
+    }
+    
+    inspector_spec = user.especialidade
+    if not inspector_spec:
+        return False
+        
+    allowed_areas = mapping.get(inspector_spec, [])
+    # As diretivas podem ter múltiplas especialidades separadas por ';'
+    directive_specs = [s.strip().upper() for s in directive_specs_string.split(';')] if directive_specs_string else []
+    
+    if "TODAS" in directive_specs:
+        return True
+        
+    # Se qualquer uma das áreas da diretiva estiver na lista permitida do inspetor
+    return any(spec in allowed_areas for spec in directive_specs)
 
 templates.env.filters['format_especialidade'] = format_especialidade
 
@@ -73,10 +106,17 @@ def is_rate_limited(key: str, max_attempts: int = 5, window: int = 60):
     login_attempts[key].append(now)
     return False
 
+SECRET_KEY = os.getenv("SECRET_KEY", "default_secret_key_change_in_production")
+
 def check_gatekeeper(request: Request):
-    if request.cookies.get("gatekeeper_access") == "granted":
-        return True
-    return False
+    token = request.cookies.get("gatekeeper_access")
+    if not token:
+        return False
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return payload.get("access") == "granted"
+    except Exception:
+        return False
 
 @app.on_event("startup")
 def on_startup():
@@ -115,11 +155,13 @@ async def gatekeeper_verify(request: Request, password: str = Form(...)):
     if is_rate_limited(f"gatekeeper_{client_ip}"):
         raise HTTPException(status_code=429, detail="Muitas tentativas. Tente novamente em 1 minuto.")
 
-    if password == GATEKEEPER_PASSWORD:
+    if hmac.compare_digest(password, GATEKEEPER_PASSWORD): # A2: Secure comparison
         response = RedirectResponse(url="/", status_code=303)
+        # A3: Signed cookie using JWT
+        token = jwt.encode({"access": "granted", "exp": time.time() + 86400 * 7}, SECRET_KEY, algorithm="HS256")
         response.set_cookie(
             key="gatekeeper_access", 
-            value="granted", 
+            value=token, 
             max_age=86400 * 7,
             httponly=True,
             samesite="lax",
@@ -280,16 +322,18 @@ async def update_directive_details(
     if not link:
         raise HTTPException(status_code=404, detail="Vínculo de Diretiva not found")
     
-    # Check specialty permission for inspetors
-    if current_user.role == 'inspetor':
-        allowed_specs = link.diretiva.especialidade.split(';') if link.diretiva.especialidade else []
-        if allowed_specs and current_user.especialidade not in allowed_specs:
-            raise HTTPException(status_code=403, detail="Você não tem permissão para alterar diretivas desta especialidade.")
+    # Check specialty permission based on mapping (User Career -> Directive Area)
+    if not has_specialty_permission(current_user, link.diretiva.especialidade):
+        raise HTTPException(status_code=403, detail="Você não tem permissão para alterar diretivas desta especialidade.")
+
+    # A7: Validate status using Enum
+    if status not in [s.value for s in StatusDiretiva]:
+        raise HTTPException(status_code=400, detail=f"Status inválido: {status}")
 
     # Update fields
     link.status = status
     link.observacao = observacoes
-    link.data_status = datetime.now(timezone.utc)  # C2: corrigido AttributeError (timezone.utc, não datetime.timezone.utc)
+    link.data_status = datetime.now(timezone.utc)
 
     # Handle PDF upload
     if pdf_file and pdf_file.filename:
@@ -363,11 +407,9 @@ async def delete_attachment(
     if not link:
         raise HTTPException(status_code=404, detail="Vínculo de Diretiva not found")
     
-    # Check specialty permission for inspetors
-    if current_user.role == 'inspetor':
-        allowed_specs = link.diretiva.especialidade.split(';') if link.diretiva.especialidade else []
-        if allowed_specs and current_user.especialidade not in allowed_specs:
-            raise HTTPException(status_code=403, detail="Você não tem permissão para alterar diretivas desta especialidade.")
+    # Check specialty permission based on mapping
+    if not has_specialty_permission(current_user, link.diretiva.especialidade):
+        raise HTTPException(status_code=403, detail="Você não tem permissão para alterar diretivas desta especialidade.")
 
     if link.pdf_path:
         file_path = os.path.join("app/static/uploads", link.pdf_path)

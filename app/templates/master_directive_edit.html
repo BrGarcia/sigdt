@@ -64,7 +64,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Especialidades Responsáveis</label>
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-md border">
                         {% set selected_specs = directive.especialidade.split(';') if directive.especialidade else [] %}
-                        {% for spec in ['ELETRÔNICA', 'ELÉTRICA', 'CÉLULA', 'HIDRÁULICA', 'MOTORES', 'EQV'] %}
+                        {% for spec in ['MOT', 'HID', 'CEL', 'ELT', 'ELE', 'EST', 'EQV', 'ARM'] %}
                         <div class="flex items-center">
                             <input type="checkbox" name="especialidades" value="{{ spec }}" id="spec-{{ loop.index }}"
                                 {% if spec in selected_specs %}checked{% endif %}

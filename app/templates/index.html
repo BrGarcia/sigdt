@@ -54,30 +54,12 @@
                             <div class="space-y-2 border rounded-lg px-4 py-2 bg-white">
                                 <label class="text-sm font-semibold text-gray-700 block mb-2">Especialidades</label>
                                 <div class="grid grid-cols-2 gap-2">
+                                    {% for spec in ['MOT', 'HID', 'CEL', 'ELT', 'ELE', 'EST', 'EQV', 'ARM'] %}
                                     <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
-                                        <input type="checkbox" name="especialidade" value="ELT" class="rounded text-blue-600 focus:ring-blue-500">
-                                        <span>ELT</span>
+                                        <input type="checkbox" name="especialidade" value="{{ spec }}" class="rounded text-blue-600 focus:ring-blue-500">
+                                        <span>{{ spec }}</span>
                                     </label>
-                                    <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
-                                        <input type="checkbox" name="especialidade" value="ELE" class="rounded text-blue-600 focus:ring-blue-500">
-                                        <span>ELE</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
-                                        <input type="checkbox" name="especialidade" value="HID" class="rounded text-blue-600 focus:ring-blue-500">
-                                        <span>HID</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
-                                        <input type="checkbox" name="especialidade" value="CEL" class="rounded text-blue-600 focus:ring-blue-500">
-                                        <span>CEL</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
-                                        <input type="checkbox" name="especialidade" value="MOT" class="rounded text-blue-600 focus:ring-blue-500">
-                                        <span>MOT</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
-                                        <input type="checkbox" name="especialidade" value="EQV" class="rounded text-blue-600 focus:ring-blue-500">
-                                        <span>EQV</span>
-                                    </label>
+                                    {% endfor %}
                                 </div>
                             </div>
                             {% endif %}

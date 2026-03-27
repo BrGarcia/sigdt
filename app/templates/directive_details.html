@@ -97,14 +97,10 @@
                         <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
                         <select name="status" id="status"
                             class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="Pendente" {% if diretiva.status=='Pendente' %}selected{% endif %}>Pendente
-                            </option>
-                            <option value="Em andamento" {% if diretiva.status=='Em andamento' %}selected{% endif %}>Em
-                                andamento</option>
-                            <option value="Concluída" {% if diretiva.status=='Concluída' %}selected{% endif %}>Concluída
-                            </option>
-                            <option value="Não aplicável" {% if diretiva.status=='Não aplicável' %}selected{% endif %}>
-                                Não aplicável</option>
+                            <option value="Pendente" {% if diretiva.status=='Pendente' %}selected{% endif %}>Pendente</option>
+                            <option value="Em andamento" {% if diretiva.status=='Em andamento' %}selected{% endif %}>Em andamento</option>
+                            <option value="Concluída" {% if diretiva.status=='Concluída' %}selected{% endif %}>Concluída</option>
+                            <option value="Não aplicável" {% if diretiva.status=='Não aplicável' %}selected{% endif %}>Não aplicável</option>
                         </select>
                     </div>
                     <div>
