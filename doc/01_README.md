@@ -30,14 +30,15 @@ docker-compose up --build -d
 ```
 Acesse: **[http://localhost:8000](http://localhost:8000)**
 
-## 📅 Roadmap V3.5.0 (Em Desenvolvimento)
+## 📅 Versão 3.5.0 (Concluída - Estabilização e Segurança)
 *   **[✅ C1]** Dependências pinadas no `requirements.txt` (build reprodutível).
 *   **[✅ C2]** Bug `datetime.now(timezone.utc)` corrigido em `app/main.py`.
 *   **[✅ C3]** `logs.txt` adicionado ao `.gitignore`.
-*   **[A2]** Comparação segura no Gatekeeper (`hmac.compare_digest`).
-*   **[A3]** Cookie do Gatekeeper assinado com `SECRET_KEY`.
-*   **[A6]** Validação robusta de inputs nos schemas Pydantic.
-*   **[A7]** Enum de status de diretiva para bloquear valores arbitrários.
+*   **[✅ A2]** Comparação segura no Gatekeeper (`hmac.compare_digest`).
+*   **[✅ A3]** Cookie do Gatekeeper assinado com `SECRET_KEY` (JWT).
+*   **[✅ A6]** Validação robusta de inputs nos schemas Pydantic.
+*   **[✅ A7]** Enum de status de diretiva para bloquear valores arbitrários no backend.
+*   **[✅ T1]** Expansão da suíte de testes (Segurança e Integridade).
 
 ## 📅 Roadmap Futuro (v4.0.0+)
 *   Multi-Ambientes (Hangar X / Y).

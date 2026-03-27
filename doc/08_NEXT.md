@@ -6,22 +6,18 @@ Este documento consolida as metas para a Versão 3.5.0, focando em correções d
 
 ## 🎯 Sprint Atual: Versão 3.5.0 (Estabilização e Segurança — Revisão Técnica)
 
-### ✅ Itens Concluídos
-*   **Exportação Inteligente:** Implementada a exportação XLSX vinculada aos filtros do dashboard.
-*   **Nomenclatura Dinâmica:** Arquivos gerados agora herdam o nome do termo de busca aplicado.
-*   **Enriquecimento de Dados:** Adicionado o campo `Objetivo` (descrição técnica) no relatório exportado.
-*   **[C1] Build Reprodutível:** `requirements.txt` reescrito com 22 dependências pinadas (`pip freeze`).
-*   **[C2] Bug datetime corrigido:** `AttributeError` em runtime ao salvar diretivas eliminado (`timezone.utc`).
-*   **[C3] Logs ignorados:** `logs.txt` adicionado ao `.gitignore`.
+### ✅ Itens Concluídos (V3.5.0)
+*   **[A2] Segurança Gatekeeper:** Substituída comparação `==` por `hmac.compare_digest()` contra timing attacks.
+*   **[A3] Cookies Assinados:** Cookie do Gatekeeper agora é um JWT assinado com `SECRET_KEY`.
+*   **[A6] Validação de Usuários:** Schemas Pydantic reforçados com regex, EmailStr e limites de tamanho.
+*   **[A7] Integridade de Status:** Implementado `Enum StatusDiretiva` bloqueando estados inválidos.
+*   **[T1] Suíte de Testes:** Criada bateria de testes de integridade e segurança (`pytest`).
+*   **Exportação Inteligente:** XLSX vinculado aos filtros do dashboard com nomenclatura dinâmica.
+*   **[C1] Build Reprodutível:** `requirements.txt` reescrito com dependências pinadas.
+*   **[C2] Bug datetime:** `AttributeError` corrigido em `app/main.py`.
+*   **[C3] Logs ignorados:** `logs.txt` no `.gitignore`.
 
-### 🔴 Fase 1 — Segurança (pendente)
-*   [ ] **[A2]** Gatekeeper: substituir comparação `==` por `hmac.compare_digest()`.
-*   [ ] **[A3]** Cookie do Gatekeeper: assinar com `SECRET_KEY` via `itsdangerous`.
-*   [ ] **[A6]** Schemas Pydantic: validar `min_length`, `EmailStr`, regex para username e complexidade de senha.
-*   [ ] **[A7]** Campo `status`: criar `Enum StatusDiretiva` e bloquear valores arbitrários no backend.
-
-
-### 2. Fase 2 — Refatoração Estrutural (v3.5.0 posterior)
+### 1. Fase 2 — Refatoração Estrutural (v3.5.0 posterior)
 *   [ ] **[A4]** Modularizar `main.py` em routers separados (`routes/directives.py`, `routes/gatekeeper.py`).
 *   [ ] **[M1/M2]** Criar `base.html` com herança Jinja2 e script compartilhado.
 *   [ ] **[M7]** Extrair `sanitize_formula` duplicada para `app/utils.py`.

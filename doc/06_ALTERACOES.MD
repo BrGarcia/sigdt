@@ -1,11 +1,16 @@
-ALTERACOES NA VERSAO 3.5.0 (EM DESENVOLVIMENTO — branch: v3.5.0-dev):
-	[SEGURANÇA / ESTABILIDADE] Correções Críticas (revisao.md):
+ALTERACOES NA VERSAO 3.5.0 (CONCLUÍDO — branch: v3.5.0-dev):
+	[SEGURANÇA / ESTABILIDADE] Correções Críticas e Blindagem:
 		[C1] requirements.txt: todas as 22 dependências pinadas com versões exatas (pip freeze).
 		      Inclui starlette==0.46.2 explicitamente para evitar regressão de TemplateResponse.
 		[C2] app/main.py: corrigido AttributeError em runtime ao salvar diretivas.
 		      Import atualizado: `from datetime import datetime, timezone`.
 		      Linhas 292 e 310: `datetime.now(datetime.timezone.utc)` → `datetime.now(timezone.utc)`.
 		[C3] .gitignore: adicionado `logs.txt` explicitamente (extensão .txt não coberta por *.log).
+		[A2] app/main.py: Gatekeeper atualizado para comparação segura via `hmac.compare_digest`.
+		[A3] app/main.py: Cookie do Gatekeeper agora é um JWT assinado com `SECRET_KEY`.
+		[A6] app/users/schemas.py: Adicionadas validações robustas (min_length, regex, EmailStr) ao UserCreate.
+		[A7] app/models.py: Implementado `StatusDiretiva(Enum)` para garantir integridade de dados no backend.
+		[T1] tests/: Implementação de nova suíte de testes de segurança e integridade funcional.
 
 ALTERACOES NA VERSAO 3.0.0 (CONCLUÍDO):
 	[PLANEJAMENTO] ...

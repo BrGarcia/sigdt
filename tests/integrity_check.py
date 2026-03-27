@@ -25,11 +25,12 @@ def test_system_integrity():
     response = client.post("/gatekeeper", data={"password": "wrong"}, follow_redirects=True)
     assert "error=1" in str(response.url)
     
-    response = client.post("/gatekeeper", data={"password": "asdf1234"}, follow_redirects=True)
+    import os
+    gatekeeper_password = os.getenv("GATEKEEPER_PASSWORD")
+    response = client.post("/gatekeeper", data={"password": gatekeeper_password}, follow_redirects=True)
     assert response.status_code == 200
     assert response.url.path == "/"
-    # Simular cookie para o resto dos testes
-    client.cookies.set("gatekeeper_access", "granted")
+    # O cookie já deve estar setado pelo TestClient após o POST bem sucedido.
     print("   [OK] Gatekeeper protegendo e aceitando senha correta.")
 
     # 2. Testar Dashboard (Colunas e Conteúdo)

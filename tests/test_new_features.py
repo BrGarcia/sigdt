@@ -1,16 +1,19 @@
 from fastapi.testclient import TestClient
 import pytest
-from app.main import app
+from app.main import app, SECRET_KEY
 from app.database import init_db
 from sqlmodel import Session, select
 from app.models import Diretiva, Aeronave, DiretivaAeronave
 from app.users.models import User
 from app.users import security
 import uuid
+from jose import jwt
+import time
 
 client = TestClient(app)
-# Bypass Gatekeeper
-client.cookies.set("gatekeeper_access", "granted")
+# Bypass Gatekeeper with signed JWT
+token = jwt.encode({"access": "granted", "exp": time.time() + 3600}, SECRET_KEY, algorithm="HS256")
+client.cookies.set("gatekeeper_access", token)
 
 # Ensure DB is initialized
 init_db()

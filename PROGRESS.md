@@ -1,17 +1,19 @@
 # PROGRESSO DO PROJETO SIGDT
 
-## Versão 3.5.0-dev (branch: `v3.5.0-dev`)
+## Versão 3.5.0 (branch: `v3.5.0-dev`)
 
-### Status Atual: Fase 1 — Estabilização e Segurança (em andamento)
+### Status Atual: Fase 1 — Estabilização e Segurança (CONCLUÍDO)
 
 #### 📅 27/03/2026 — Correções Críticas (revisao.md Fase 1)
 - [x] **C1** — `requirements.txt` reescrito com 22 dependências pinadas via `pip freeze` (build reprodutível).
 - [x] **C2** — Corrigido `AttributeError` em `app/main.py` (linhas 292 e 310): `datetime.now(datetime.timezone.utc)` → `datetime.now(timezone.utc)`.
 - [x] **C3** — `logs.txt` adicionado ao `.gitignore` (evitar commit de stack traces sensíveis).
 - [x] **A2** — Comparação segura no Gatekeeper (`hmac.compare_digest`)
-- [x] **A3** — Assinar cookie do Gatekeeper com SECRET_KEY (Assinatura JWT)
+- [x] **A3** — Assinar cookie do Gatekeeper com SECRET_KEY (JWT)
 - [x] **A6** — Validar inputs nos schemas Pydantic (UserCreate com validações robustas)
 - [x] **A7** — Criar Enum de status e validar no backend (StatusDiretiva)
+- [x] **T1** — Suíte de testes automatizados (Pytest + Integrity Check)
+
 
 #### 📅 Observaçoes feitas pelo usuario:
 - [x] Sincronização de especialidades (Carreira vs. Área Técnica).

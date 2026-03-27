@@ -38,11 +38,10 @@ A análise inicial do projeto SIGDT revelou diversas vulnerabilidades críticas 
 *   **Descrição:** Foi implementada limitação de tamanho estrita (50MB) com bloqueio ativo e checagem semântica de colunas obrigatórias via DataFrame.
 *   **Recomendação:** A mitigação principal de batch chunking no processamento em si já é suficiente graças ao SQLAlchemy session buffer.
 
-### 3.2 Ausência de Paginação Real
+### 3.2 Paginação Real
 
-*   **Status:** **PENDENTE**
-*   **Descrição:** As listagens de diretivas ainda estão fixas em 100 resultados.
-*   **Recomendação:** Implementar uma paginação server-side completa com parâmetros `page` e `size`.
+*   **Status:** **CORRIGIDO**
+*   **Descrição:** Implementada paginação server-side completa com parâmetros `page` e `size` (offset/limit) no Dashboard para suportar grandes volumes de dados.
 
 ### 3.3 Falta de Feedback para o Usuário
 
@@ -66,8 +65,8 @@ A análise inicial do projeto SIGDT revelou diversas vulnerabilidades críticas 
 
 ### 4.3 Testes Automatizados
 
-*   **Status:** **PENDENTE**
-*   **Recomendação:** Desenvolver uma suíte de testes unitários e de integração para garantir a estabilidade do código e prevenir regressões.
+*   **Status:** **CORRIGIDO**
+*   **Descrição:** Desenvolvida suíte inicial de testes (`pytest`) cobrindo integridade do sistema, fluxos de segurança (Gatekeeper/JWT) e regras de negócio.
 
 ---
 
