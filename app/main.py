@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 import io
 import pandas as pd
 from sqlmodel import Session, select, desc, or_, func
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from app.database import init_db, get_session, engine
@@ -289,7 +289,7 @@ async def update_directive_details(
     # Update fields
     link.status = status
     link.observacao = observacoes
-    link.data_status = datetime.now(datetime.timezone.utc)  # Item 13: datetime moderno
+    link.data_status = datetime.now(timezone.utc)  # C2: corrigido AttributeError (timezone.utc, não datetime.timezone.utc)
 
     # Handle PDF upload
     if pdf_file and pdf_file.filename:
@@ -307,7 +307,7 @@ async def update_directive_details(
         os.makedirs(upload_dir, exist_ok=True)
         
         # Item 9: Forçar extensão .pdf independentemente do nome original
-        new_filename = f"diretiva_link_{diretiva_id}_{int(datetime.now(datetime.timezone.utc).timestamp())}.pdf"
+        new_filename = f"diretiva_link_{diretiva_id}_{int(datetime.now(timezone.utc).timestamp())}.pdf"
         file_path = os.path.join(upload_dir, new_filename)
         
         with open(file_path, "wb") as buffer:

@@ -110,3 +110,6 @@ dmypy.json
 # Database
 *.db
 *.sqlite3
+
+# Application logs (C3: evitar commit de logs com stack traces sensíveis)
+logs.txt
