@@ -1,4 +1,13 @@
-ALTERACOES NA VERSAO 3.0.0 (EM DESENVOLVIMENTO):
+ALTERACOES NA VERSAO 3.5.0 (EM DESENVOLVIMENTO — branch: v3.5.0-dev):
+	[SEGURANÇA / ESTABILIDADE] Correções Críticas (revisao.md):
+		[C1] requirements.txt: todas as 22 dependências pinadas com versões exatas (pip freeze).
+		      Inclui starlette==0.46.2 explicitamente para evitar regressão de TemplateResponse.
+		[C2] app/main.py: corrigido AttributeError em runtime ao salvar diretivas.
+		      Import atualizado: `from datetime import datetime, timezone`.
+		      Linhas 292 e 310: `datetime.now(datetime.timezone.utc)` → `datetime.now(timezone.utc)`.
+		[C3] .gitignore: adicionado `logs.txt` explicitamente (extensão .txt não coberta por *.log).
+
+ALTERACOES NA VERSAO 3.0.0 (CONCLUÍDO):
 	[PLANEJAMENTO] ...
 
 ALTERACOES NA VERSAO 2.0.0 (CONCLUÍDO):

@@ -1,28 +1,32 @@
-# Próximos Passos e Bugs (V3.0.0 - Em Desenvolvimento)
+# Próximos Passos e Bugs (V3.5.0 - Em Desenvolvimento)
 
-Este documento consolida as metas para a Versão 3.0.0, focando em robustez, segurança e persistência de dados administrativos.
+Este documento consolida as metas para a Versão 3.5.0, focando em correções de segurança e estabilidade identificadas na revisão técnica (`revisao.md`).
 
 ---
 
-## 🎯 Sprint Atual: Versão 3.0.0 (Segurança & Infraestrutura)
+## 🎯 Sprint Atual: Versão 3.5.0 (Estabilização e Segurança — Revisão Técnica)
 
 ### ✅ Itens Concluídos
 *   **Exportação Inteligente:** Implementada a exportação XLSX vinculada aos filtros do dashboard.
 *   **Nomenclatura Dinâmica:** Arquivos gerados agora herdam o nome do termo de busca aplicado.
 *   **Enriquecimento de Dados:** Adicionado o campo `Objetivo` (descrição técnica) no relatório exportado.
+*   **[C1] Build Reprodutível:** `requirements.txt` reescrito com 22 dependências pinadas (`pip freeze`).
+*   **[C2] Bug datetime corrigido:** `AttributeError` em runtime ao salvar diretivas eliminado (`timezone.utc`).
+*   **[C3] Logs ignorados:** `logs.txt` adicionado ao `.gitignore`.
 
-### 1. Blindagem Global (Anti-CSRF)
-*   [ ] **Implementação:** Adicionar `Starlette CSRFMiddleware` ao FastAPI.
-*   [ ] **Integração HTMX:** Configurar `hx-headers` em todas as requisições AJAX para incluir o token CSRF.
-*   [ ] **Validação:** Garantir que todos os formulários POST (Login, Gatekeeper, Edição, Importação) exijam o token.
+### 🔴 Fase 1 — Segurança (pendente)
+*   [ ] **[A2]** Gatekeeper: substituir comparação `==` por `hmac.compare_digest()`.
+*   [ ] **[A3]** Cookie do Gatekeeper: assinar com `SECRET_KEY` via `itsdangerous`.
+*   [ ] **[A6]** Schemas Pydantic: validar `min_length`, `EmailStr`, regex para username e complexidade de senha.
+*   [ ] **[A7]** Campo `status`: criar `Enum StatusDiretiva` e bloquear valores arbitrários no backend.
 
-### 2. Persistência de Segurança (Rate Limiting)
-*   [ ] **Migração:** Substituir o dicionário `login_attempts` em memória por uma tabela no banco de dados (`security_logs`) ou Redis.
-*   [ ] **Resiliência:** Garantir que tentativas de força bruta não sejam zeradas após o restart do container.
 
-### 3. Observabilidade (Logging Estruturado)
-*   [ ] **Framework:** Implementar `logging` padrão do Python com rotação de arquivos (`TimedRotatingFileHandler`).
-*   [ ] **Auditoria:** Registrar eventos críticos: Falhas de login, Ingestão de CSV (sucesso/erro), Erros no AT Parser e Alterações de status por inspetores.
+### 2. Fase 2 — Refatoração Estrutural (v3.5.0 posterior)
+*   [ ] **[A4]** Modularizar `main.py` em routers separados (`routes/directives.py`, `routes/gatekeeper.py`).
+*   [ ] **[M1/M2]** Criar `base.html` com herança Jinja2 e script compartilhado.
+*   [ ] **[M7]** Extrair `sanitize_formula` duplicada para `app/utils.py`.
+*   [ ] **[M3]** Corrigir `alembic.ini` para ler `DATABASE_URL` do ambiente.
+*   [ ] **[M8]** Implementar logging estruturado com auditoria de ações.
 
 ---
 
