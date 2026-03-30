@@ -27,7 +27,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <!-- Create User Form -->
             <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                <h3 class="text-lg font-semibold mb-4 text-gray-800">Criar Novo Inspetor</h3>
+                <h3 class="text-lg font-semibold mb-4 text-gray-800">Criar Novo Usuário</h3>
                 <form hx-post="/users/" hx-target="#user-list" hx-swap="beforeend" hx-on::after-request="if(event.detail.successful) this.reset()" class="space-y-4">
                     <div>
                         <label for="username" class="block text-sm font-medium text-gray-700">Usuário</label>
@@ -42,6 +42,13 @@
                         <input type="password" name="password" id="password" required class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
+                        <label for="role" class="block text-sm font-medium text-gray-700">Role</label>
+                        <select name="role" id="role" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="inspetor">Inspetor</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div>
                         <label for="especialidade" class="block text-sm font-medium text-gray-700">Especialidade</label>
                         <select name="especialidade" id="especialidade" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Não definida</option>
@@ -53,7 +60,7 @@
                             <option value="BMB">BMB</option>
                         </select>
                     </div>
-                    <button type="submit" class="w-full bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-blue-800">Criar Inspetor</button>
+                    <button type="submit" class="w-full bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-blue-800">Criar Usuário</button>
                 </form>
             </div>
 

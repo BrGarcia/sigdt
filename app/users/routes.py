@@ -111,6 +111,7 @@ def create_user(
     username: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
+    role: str = Form("inspetor"),
     especialidade: Optional[str] = Form(None),
     db: Session = Depends(get_session)
 ):
@@ -118,8 +119,8 @@ def create_user(
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
     
-    user_in = schemas.UserCreate(username=username, email=email, password=password, especialidade=especialidade)
-    new_user = actions.create_user(db=db, user=user_in, role="inspetor")
+    user_in = schemas.UserCreate(username=username, email=email, password=password, role=role, especialidade=especialidade)
+    new_user = actions.create_user(db=db, user=user_in, role=role)
     
     # Return HTML fragment for HTMX to append to the list
     from app.main import templates
