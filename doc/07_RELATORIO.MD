@@ -1,77 +1,40 @@
-# Relatório de Análise de Segurança e Melhorias - SIGDT (Pós-Correção)
+# Relatório de Status do Projeto SIGDT (V4.0)
 
-## 1. Visão Geral
+## 📊 Visão Geral
+O projeto SIGDT atingiu um marco crítico de estabilidade e maturidade arquitetural com a conclusão da **Refatoração Relacional V4**. O sistema deixou de operar em uma estrutura "flat" (baseada em uma única tabela de diretivas) para um modelo normalizado de alta performance.
 
-A análise inicial do projeto SIGDT revelou diversas vulnerabilidades críticas de segurança e falhas de implementação. **Esta versão do relatório documenta as correções aplicadas e as melhorias que ainda estão pendentes.**
+## 🛠 Principais Implementações (Fase Atual)
 
----
+### 1. Refatoração Relacional Completa
+A base de dados foi dividida em entidades lógicas para eliminar redundâncias:
+- **Aeronave:** Cadastro único de matrículas e números de série.
+- **Snapshot:** Rastreabilidade por importação, permitindo auditoria de quando cada dado entrou no sistema.
+- **Diretiva Técnica (Mestre):** Dados fixos da diretiva (Código, Objetivo, Classe, Categoria).
+- **Item da Diretiva:** Subdivisão técnica da diretiva (FADT, Tarefa, Ordem de Referência).
+- **Vínculo Operacional:** Tabela que cruza o Item com a Aeronave, armazenando o Status, GUT e Anexo PDF.
 
-## 2. Vulnerabilidades Críticas de Segurança
+### 2. Identificação Alfanumérica Sanitizada (Simplified PK)
+Implementada uma nova lógica de chaves primárias para Diretivas Técnicas:
+- **PK:** `codigo_simplificado` (String sanitizada, ex: "BO31400224").
+- **Benefício:** Elimina erros de busca e duplicidade causados por espaços, hifens ou variações de digitação no CSV original.
+- **Transparência:** O usuário continua visualizando o código original (com espaços e pontuação) nos templates.
 
-### 2.1 SQL Injection (Injeção de SQL) - CORRIGIDO
+### 3. Lógica de Snapshot de Importação
+O serviço de importação CSV foi robustecido:
+- Cada importação gera um registro de Snapshot.
+- **Auditoria Automática:** Itens que constavam no banco para uma aeronave, mas desapareceram do novo arquivo importado, são marcados automaticamente como "Concluídos" com a justificativa: `[AUTO] Concluída via snapshot... Motivo: Item ausente no CSV`.
 
-*   **Status:** **CORRIGIDO**
-*   **Descrição da Correção:** A rota `/directives` foi modificada para utilizar as funcionalidades do SQLModel para criar queries parametrizadas. A busca agora é feita de forma segura, eliminando o risco de injeção de SQL.
+### 4. Segurança e Permissões
+- Refinamento do mapeamento de **Carreiras (Inspetor)** vs. **Áreas Técnicas (Diretiva)**.
+- Proteção Anti-CSRF global implementada.
+- Gatekeeper (acesso inicial) protegido por JWT assinado.
 
-### 2.2 Ausência de Autenticação e Autorização - CORRIGIDO
+## 📈 Resultados Alcançados
+- **Integridade Referencial:** Impossível existir um vínculo de aeronave sem uma diretiva mestre correspondente.
+- **Deduplicação de Dados:** A alteração de um dado mestre (ex: Objetivo da DT) reflete instantaneamente em todas as aeronaves vinculadas.
+- **Rastreabilidade:** Agora é possível saber exatamente qual arquivo CSV deu origem a cada registro no banco de dados.
 
-*   **Status:** **CORRIGIDO**
-*   **Descrição da Correção:** Foi implementado um sistema completo de autenticação e autorização com três níveis de acesso (Básico, Inspetor, Admin), utilizando JWT. As rotas sensíveis agora são protegidas por dependências que verificam o nível de acesso do usuário.
-
-### 2.3 Credenciais Hardcoded no `docker-compose.yml` - CORRIGIDO
-
-*   **Status:** **CORRIGIDO**
-*   **Descrição da Correção:** As credenciais do banco de dados foram movidas para um arquivo `.env`, que é ignorado pelo Git. O `docker-compose.yml` agora lê as credenciais das variáveis de ambiente, eliminando a exposição de segredos no código-fonte.
-
-### 2.4 Cross-Site Scripting (XSS) - PENDENTE
-
-*   **Status:** **PENDENTE**
-*   **Descrição:** Embora o Jinja2 ofereça proteção, uma validação e sanitização explícita dos dados que vêm do CSV ainda é recomendada para uma camada extra de segurança.
-
----
-
-## 3. Falhas de Implementação e Funcionalidade (Pendentes)
-
-### 3.1 Processamento de CSV Ineficiente e sem Validação
-
-*   **Status:** **CORRIGIDO na V2.0.0**
-*   **Descrição:** Foi implementada limitação de tamanho estrita (50MB) com bloqueio ativo e checagem semântica de colunas obrigatórias via DataFrame.
-*   **Recomendação:** A mitigação principal de batch chunking no processamento em si já é suficiente graças ao SQLAlchemy session buffer.
-
-### 3.2 Paginação Real
-
-*   **Status:** **CORRIGIDO**
-*   **Descrição:** Implementada paginação server-side completa com parâmetros `page` e `size` (offset/limit) no Dashboard para suportar grandes volumes de dados.
-
-### 3.3 Falta de Feedback para o Usuário
-
-*   **Status:** **PENDENTE**
-*   **Descrição:** O sistema não fornece feedback claro para o usuário em caso de falhas no upload de arquivos ou outras operações.
-*   **Recomendação:** Implementar um sistema de "flash messages" para notificar o usuário sobre o resultado das operações.
-
----
-
-## 4. Melhorias Sugeridas (Pendentes)
-
-### 4.1 Otimização do Dockerfile
-
-*   **Status:** **PENDENTE**
-*   **Recomendação:** Reordenar os comandos `COPY` no `Dockerfile` para aproveitar melhor o cache do Docker durante o build.
-
-### 4.2 Logs de Auditoria
-
-*   **Status:** **PENDENTE**
-*   **Recomendação:** Implementar um sistema de logging para registrar eventos importantes, como upload de arquivos e modificações de diretivas, associando-os ao usuário que realizou a ação.
-
-### 4.3 Testes Automatizados
-
-*   **Status:** **CORRIGIDO**
-*   **Descrição:** Desenvolvida suíte inicial de testes (`pytest`) cobrindo integridade do sistema, fluxos de segurança (Gatekeeper/JWT) e regras de negócio.
-
----
-
-## 5. Conclusão
-
-O projeto SIGDT evoluiu significativamente, com a correção das vulnerabilidades mais críticas e a implementação de um robusto sistema de controle de acesso. A base da aplicação está muito mais segura e alinhada com as melhores práticas.
-
-Os itens marcados como **PENDENTE** representam os próximos passos recomendados para tornar o sistema ainda mais resiliente, performático e fácil de usar.
+## 📅 Próximos Passos (Próxima Sprint)
+1. **Agrupamento no Dashboard:** Exibir diretivas mestras com sub-itens expansíveis para reduzir o ruído visual.
+2. **Dashboard Gráfico:** Visualização percentual de conformidade por aeronave.
+3. **Evolução do Parser PDF:** Extração automatizada de campos das Fichas AT.

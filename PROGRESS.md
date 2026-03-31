@@ -46,5 +46,7 @@
 - [x] **Migração de Dados Robusta** — ETL reescrito para deduplicação e consolidação segura de dados mestres.
 - [x] **Runtime Migration** — Aplicação migrada para consumir exclusivamente o novo modelo.
 - [x] **Remoção de Legado** — Tabelas e modelos antigos removidos/depreciados.
-- [x] **Testes de Integridade** — Suíte de testes atualizada para o novo modelo relacional.
+- [x] **Simplified PKs** — Implementação de `codigo_simplificado` como Chave Primária String para `DiretivaTecnica`.
+- [x] **Sanitização de Códigos** — Lógica para limpar espaços e símbolos de códigos de diretivas durante a importação.
+- [x] **Testes de Integridade** — Suíte de testes atualizada para o novo modelo relacional e PKs simplificadas.
 

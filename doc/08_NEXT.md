@@ -1,39 +1,31 @@
-# Próximos Passos e Bugs (V3.5.0 - Em Desenvolvimento)
+# Próximos Passos e Bugs (V4.0.0 - Em Desenvolvimento)
 
-Este documento consolida as metas para a Versão 3.5.0, focando em correções de segurança e estabilidade identificadas na revisão técnica (`revisao.md`).
-
----
-
-## 🎯 Sprint Atual: Versão 3.5.0 (Estabilização e Segurança — Revisão Técnica)
-
-### ✅ Itens Concluídos (V3.5.0)
-*   **[A2] Segurança Gatekeeper:** Substituída comparação `==` por `hmac.compare_digest()` contra timing attacks.
-*   **[A3] Cookies Assinados:** Cookie do Gatekeeper agora é um JWT assinado com `SECRET_KEY`.
-*   **[A6] Validação de Usuários:** Schemas Pydantic reforçados com regex, EmailStr e limites de tamanho.
-*   **[A7] Integridade de Status:** Implementado `Enum StatusDiretiva` bloqueando estados inválidos.
-*   **[T1] Suíte de Testes:** Criada bateria de testes de integridade e segurança (`pytest`).
-*   **Exportação Inteligente:** XLSX vinculado aos filtros do dashboard com nomenclatura dinâmica.
-*   **[C1] Build Reprodutível:** `requirements.txt` reescrito com dependências pinadas.
-*   **[C2] Bug datetime:** `AttributeError` corrigido em `app/main.py`.
-*   **[C3] Logs ignorados:** `logs.txt` no `.gitignore`.
-
-### 1. Fase 2 — Refatoração Estrutural (v3.5.0 posterior)
-*   [ ] **[A4]** Modularizar `main.py` em routers separados (`routes/directives.py`, `routes/gatekeeper.py`).
-*   [ ] **[M1/M2]** Criar `base.html` com herança Jinja2 e script compartilhado.
-*   [ ] **[M7]** Extrair `sanitize_formula` duplicada para `app/utils.py`.
-*   [ ] **[M3]** Corrigir `alembic.ini` para ler `DATABASE_URL` do ambiente.
-*   [ ] **[M8]** Implementar logging estruturado com auditoria de ações.
+Este documento consolida as metas para a Versão 4.0.0, focando na estabilidade do novo modelo relacional e expansão de funcionalidades.
 
 ---
 
-## 🚀 Novas Funcionalidades & Casos de Uso (Roadmap V3.x)
+## 🎯 Sprint B (Atual)
+- [x] **Relational Refactoring:** Migração completa para o modelo de 4 níveis (Aeronave > Snapshot > DT > Item).
+- [x] **Simplified PKs:** Identificação de diretivas via código sanitizado (alfanumérico puro).
+- [x] **Audit Trail:** Registro de Snapshot por importação.
+- [ ] **UI Refresh:** Atualizar o Dashboard para agrupar visualmente itens por Diretiva Mestra (evitar lista flat excessivamente longa).
+- [ ] **Filtros por Snapshot:** Permitir visualizar o estado do banco em uma data específica no passado.
 
-- [ ] **Dashboards Visuais:** Integração com Chart.js ou Plotly para gráficos de conformidade e Matriz GUT da frota.
-- [ ] **Multi-Tenancy (Bases Operacionais):** Separação lógica de dados por Hangar ou Localização.
-- [ ] **Real-Time Locks:** Notificação via WebSocket se dois usuários tentarem editar a mesma diretiva simultaneamente.
+## 🚀 Sprint C (Futuro Próximo)
+- [ ] **PDF Parser Avançado:** Melhorar a extração de dados das Fichas AT para preencher campos automaticamente (PN, SN, Data).
+- [ ] **Importação Multi-Aeronave:** Otimizar o parser de CSV para processar arquivos com múltiplas matrículas em uma única transação (atualmente processa linha a linha).
+- [ ] **Dashboard de Conformidade:** Visão executiva (gráficos) da porcentagem de conclusão por aeronave e por especialidade.
+- [ ] **Gestão de Anexos:** Galeria de anexos por diretiva (atualmente limitado a um único PDF).
+
+## 🐛 Bugs Conhecidos / Débitos Técnicos
+- [ ] **Consistência de GUT:** Recalcular GUT de todos os itens quando a Classe/Categoria da Diretiva Mestra for alterada (parcialmente implementado).
+- [ ] **Performance:** Implementar paginação real no banco (SQL) para filtros de especialidade (atualmente filtra no Python em alguns pontos).
+- [ ] **Token Expiring:** Melhorar feedback visual quando o cookie do Gatekeeper expira.
 
 ---
 
-## 🐛 Bugs Conhecidos & Débitos Técnicos
-- [ ] **Performance de Importação:** Otimizar o Upsert de CSV para lotes muito grandes (> 5000 linhas).
-- [ ] **Feedback de Erro no Parser:** Melhorar a mensagem de erro quando o PDF não segue o padrão esperado (ex: PDF escaneado sem OCR).
+## ✅ Concluído (V3.5.0 & Início V4.0)
+- [x] Proteção Anti-CSRF Global.
+- [x] Mapeamento de Carreiras (BMA, BET, etc) vs Especialidades Técnicas.
+- [x] Sanitização de fórmulas em exportação Excel.
+- [x] Remoção completa de modelos legados.

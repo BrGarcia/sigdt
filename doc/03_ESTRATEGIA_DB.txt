@@ -1,67 +1,83 @@
-ESTRATÉGIA DE BANCO DE DADOS – CONTROLE DE DIRETIVAS TÉCNICAS
+ESTRATÉGIA DE BANCO DE DADOS – SISTEMA DE GESTÃO DE DIRETIVAS TÉCNICAS (V4.0)
 
-1.  VISÃO GERAL O sistema tem como objetivo controlar a aplicação de
-    diretivas técnicas em uma frota de aeronaves, utilizando PostgreSQL
-    como banco de dados relacional. A entrada de dados será realizada
-    por meio de arquivos CSV individuais por aeronave.
+1. VISÃO GERAL
+O sistema evoluiu para uma estrutura relacional normalizada de 4 níveis, visando eliminar a redundância de dados mestres e permitir o rastreamento histórico via Snapshots. A chave de identidade das diretivas agora é baseada em uma "versão limpa" (sanitizada) do código original.
 
-2.  MODELO DE DADOS
+2. ARQUITETURA RELACIONAL (ENTIDADE-RELACIONAMENTO)
 
-Tabelas principais:
+A estrutura atual é composta pelas seguintes tabelas:
 
-AERONAVE - id (PK) - matricula (UNIQUE) - numero_serie (UNIQUE)
+AERONAVE (Entidade Raiz)
+- id (PK)
+- matricula (UNIQUE, ex: FAB2850)
+- numero_serie (UNIQUE)
 
-DIRETIVA_TECNICA - id (PK) - codigo_diretiva - fadt (UNIQUE) -
-objetivo - classe - categoria - tipo - natureza - ordem - especialidade
+SNAPSHOT (Entidade de Auditoria/Sincronização)
+- id (PK)
+- aeronave_id (FK -> AERONAVE)
+- data_hora (Timestamp da importação)
+- nome_arquivo (Origem do dado)
+- hash_conteudo (Integridade)
 
-DIRETIVA_AERONAVE - id (PK) - aeronave_id (FK) - diretiva_tecnica_id
-(FK) - status - data_aplicacao - data_status - ordem_aplicada -
-observacao
+DIRETIVA_TECNICA (Dados Mestres - Global)
+- codigo_simplificado (PK String, ex: BO31400224) <- Identificador Alfanumérico Sanitizado
+- codigo (Rótulo de Exibição, ex: BO 314-002-24)
+- objetivo, classe, categoria, tipo, natureza, especialidade
+- ativa (Boolean)
 
-Restrição: UNIQUE (aeronave_id, diretiva_tecnica_id)
+DIRETIVA_ITEM (Sub-entidade - Global)
+- id (PK)
+- diretiva_tecnica_id (FK -> DIRETIVA_TECNICA.codigo_simplificado)
+- fadt (UNIQUE por Item)
+- tarefa, ordem_referencia
+- chave_item (Identificador Técnico: CODIGO_SIMP|FADT|TAREFA|ORDEM)
+- descricao_item
 
-3.  ESTRATÉGIA DE IMPORTAÇÃO (CSV)
+DIRETIVA_ITEM_AERONAVE (Estado Operacional - Relacional)
+- id (PK)
+- aeronave_id (FK -> AERONAVE)
+- diretiva_item_id (FK -> DIRETIVA_ITEM)
+- snapshot_id (FK -> SNAPSHOT) <- Última sincronização que confirmou este estado
+- status (Pendente, Em andamento, Concluída, Não aplicável)
+- gut (Gravidade, Urgência, Tendência - Calculado)
+- origem_status (csv, manual)
+- concluida_automaticamente (Boolean - Auditoria de Snapshot)
 
-Cada arquivo CSV representa uma única aeronave.
+3. ESTRATÉGIA DE CHAVES (IDENTIFICAÇÃO)
 
-Fluxo: 
-	1. Ler o CSV 
-	2. Criar ou obter aeronave (UPSERT) 
-	3. Para cada linha: 
-		- Criar ou obter diretiva (UPSERT via FADT) 
-		- Criar ou atualizar vínculo com aeronave (UPSERT)
+3.1. Sanitização de Código (codigo_simplificado)
+Para garantir a integridade nas buscas e evitar duplicidade por caracteres especiais ou espaços, o sistema utiliza uma versão limpa do código da diretiva como Chave Primária.
+Exemplo: "BO 314-002-24" -> "BO31400224"
+Lógica: `re.sub(r'[^A-Z0-9]', '', codigo.upper())`
 
-4.  UPSERT (POSTGRESQL)
+3.2. Deduplicação de Itens (chave_item)
+Um item é único dentro de uma diretiva técnica se possuir a mesma combinação de FADT, Tarefa e Ordem de Referência.
 
-Utilizar: INSERT … ON CONFLICT
+4. ESTRATÉGIA DE IMPORTAÇÃO E SNAPSHOT
 
-Para evitar duplicidade e permitir atualização automática.
+A cada importação de CSV:
+1. Um registro de SNAPSHOT é criado para a aeronave.
+2. O sistema realiza o UPSERT dos dados mestres (DiretivaTecnica e DiretivaItem).
+3. O vínculo operacional (DiretivaItemAeronave) é atualizado.
+4. Lógica de Ausência: Itens que existiam no banco para aquela aeronave, mas não constam no novo CSV, são marcados automaticamente como "Concluída" com a flag `concluida_automaticamente = True` e observação de auditoria, garantindo que o banco reflita sempre o estado mais recente do plano de manutenção (Snapshot).
 
-5.  INTEGRIDADE
+5. INTEGRIDADE E MIGRAÇÕES
 
--   FADT deve ser único
--   Matrícula e número de série únicos
--   Não permitir duplicidade de diretiva por aeronave
+- O esquema é gerido via Alembic (`migrations/`).
+- O deploy deve SEMPRE utilizar `alembic upgrade head`.
+- Constraints de UNIQUE nas tabelas de vínculo garantem que não existam registros duplicados para a mesma aeronave/item.
 
-6.  TRANSAÇÕES
+6. CÁLCULO DE GUT (GRAVIDADE, URGÊNCIA, TENDÊNCIA)
 
-Todo processo de importação deve ocorrer dentro de uma transação: BEGIN;
-… COMMIT; Em caso de erro: ROLLBACK;
+O GUT é calculado dinamicamente na camada de serviço:
+G (Classe): M=5, R=4, O=2, I=1
+U (Categoria): I=5, U=4, R=2
+T (Tendência): Definido manualmente ou padrão=3
+Fórmula: `gut = G * U * T`
+Finalidade: Ordenação prioritária no Dashboard.
 
-7.  BOAS PRÁTICAS
+7. SEGURANÇA E ACESSO
 
--   Utilizar tabela staging para importação de CSV
--   Criar índices nas chaves estrangeiras
--   Controlar histórico via campo ordem_aplicada
--   Preparar estrutura para futura evolução (versionamento de diretivas)
-
-8.  EVOLUÇÕES FUTURAS
-
--   Versionamento de diretivas (REV)
--   Auditoria de alterações
--   Dashboard de conformidade
--   Alertas automáticos
-
-9. MIGRAÇÕES COM ALEMBIC
-
-A evolução do modelo DDL agora é gerenciada estritamente pelo Alembic (diretório `migrations/`). As migrações baseadas no SQLModel ficam salvas em `migrations/versions/`. Para equalizar um banco novo, deve-se gerar o deploy usando `alembic upgrade head` para prevenir perdas de integridade.
+- O acesso é protegido por um Gatekeeper (senha global).
+- Permissões granulares baseadas na Carreira do Inspetor vs. Área Técnica da Diretiva.
+- Registro de Auditoria via campo `origem_status` e `observacao`.
