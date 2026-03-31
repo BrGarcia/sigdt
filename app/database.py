@@ -1,9 +1,9 @@
 from sqlmodel import create_engine, Session, SQLModel
 import os
 
-# Import all models here so that SQLModel can discover them
-from app.models import Diretiva
-from app.users.models import User
+# Import models to ensure they are registered with SQLModel.metadata
+import app.models
+import app.users.models
 
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sigdt.db")

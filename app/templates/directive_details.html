@@ -40,20 +40,25 @@
             </button>
         </div>
         <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">{{ diretiva.diretiva.codigo_diretiva }}</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">{{ diretiva.diretiva_item.diretiva_tecnica.codigo }}</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-                <p><strong>FADT:</strong> {{ diretiva.diretiva.fadt }}</p>
+                <p><strong>FADT:</strong> {{ diretiva.diretiva_item.fadt or 'N/A' }}</p>
+                <p><strong>Tarefa:</strong> {{ diretiva.diretiva_item.tarefa or 'N/A' }}</p>
                 <p><strong>Matrícula:</strong> {{ diretiva.aeronave.matricula }}</p>
                 <p><strong>SN Aeronave:</strong> {{ diretiva.aeronave.numero_serie }}</p>
                 <p><strong>Status Atual:</strong> {{ diretiva.status }}</p>
-                <p><strong>Especialidade:</strong> {{ diretiva.diretiva.especialidade or 'Não definida' }}</p>
+                <p><strong>Especialidade:</strong> {{ diretiva.diretiva_item.diretiva_tecnica.especialidade or 'Não definida' }}</p>
                 <p><strong>GUT Score:</strong> {{ diretiva.gut }}</p>
+                <p><strong>Origem Status:</strong> {{ diretiva.origem_status | upper }} {% if diretiva.concluida_automaticamente %}(Auto-concluída){% endif %}</p>
+                {% if diretiva.ultima_referencia_snapshot %}
+                <p class="md:col-span-2 text-xs text-gray-500 italic">Última atualização via snapshot: {{ diretiva.ultima_referencia_snapshot }}</p>
+                {% endif %}
             </div>
 
             <div class="mt-6">
-                <h3 class="text-lg font-semibold text-gray-800">Objetivo</h3>
-                <p class="text-gray-700">{{ diretiva.diretiva.objetivo }}</p>
+                <h3 class="text-lg font-semibold text-gray-800">Objetivo (Master)</h3>
+                <p class="text-gray-700">{{ diretiva.diretiva_item.diretiva_tecnica.objetivo }}</p>
             </div>
 
             <div class="mt-6">
@@ -106,7 +111,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Especialidades Responsáveis (Master)</label>
                         <div class="p-2 bg-gray-100 rounded border text-sm text-gray-600">
-                            {{ diretiva.diretiva.especialidade.replace(';', ', ') if diretiva.diretiva.especialidade else 'Não definida' }}
+                            {{ diretiva.diretiva_item.diretiva_tecnica.especialidade.replace(';', ', ') if diretiva.diretiva_item.diretiva_tecnica.especialidade else 'Não definida' }}
                         </div>
                     </div>
                     <div>

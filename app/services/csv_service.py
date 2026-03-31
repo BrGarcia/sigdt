@@ -1,14 +1,23 @@
 import pandas as pd
 from sqlmodel import Session, select
-from app.models import Diretiva, Aeronave, DiretivaAeronave
+from app.models import DiretivaTecnica, DiretivaItem, DiretivaItemAeronave, Aeronave
 from app.database import engine
 from io import StringIO
-import numpy as np
+from datetime import datetime, timezone
+from typing import Optional
 
 def sanitize_formula(value):
     if isinstance(value, str) and value.startswith(('=', '+', '-', '@')):
         return "'" + value
     return value
+
+def generate_chave_item(codigo_dt: str, fadt: Optional[str], tarefa: Optional[str], ordem: Optional[str]) -> str:
+    """Gera uma chave determinística para deduplicação do item."""
+    c = str(codigo_dt or "").strip().upper()
+    f = str(fadt or "").strip().upper()
+    t = str(tarefa or "").strip().upper()
+    o = str(ordem or "").strip().upper()
+    return f"{c}|{f}|{t}|{o}"
 
 def process_csv(csv_content: str):
     df = pd.read_csv(StringIO(csv_content), sep=';', skipinitialspace=True)
@@ -18,101 +27,144 @@ def process_csv(csv_content: str):
         val = row.get(col_name)
         if isinstance(val, pd.Series):
             val = val.iloc[0]
-        
         if pd.isna(val) or str(val).lower() == 'nan' or str(val).strip() == '':
             return None
         return sanitize_formula(str(val).strip())
 
-    BATCH_SIZE = 500
+    snapshot_ts = datetime.now(timezone.utc).isoformat()
+    processed_count = 0
+    
     with Session(engine) as session:
-        # 1. Pre-Cache do Banco
-        todas_aeronaves = session.exec(select(Aeronave)).all()
-        aero_cache = {a.matricula: a for a in todas_aeronaves}
-
-        todas_diretivas = session.exec(select(Diretiva)).all()
-        dt_cache = {d.fadt: d for d in todas_diretivas}
-
-        todos_links = session.exec(select(DiretivaAeronave)).all()
-        link_cache = {(l.aeronave_id, l.diretiva_id): l for l in todos_links}
+        # Cache de Aeronaves e Mestres para performance
+        aero_cache = {a.matricula: a for a in session.exec(select(Aeronave)).all()}
+        dt_cache = {d.codigo: d for d in session.exec(select(DiretivaTecnica)).all()}
+        
+        # Identificar aeronaves presentes no CSV para aplicar snapshot logic depois
+        matriculas_no_csv = df['MATR'].dropna().unique()
+        links_processados_ids = []
 
         for i, row in df.iterrows():
             matricula = get_val(row, 'MATR')
-            numero_serie = get_val(row, 'SN')
-            
-            if not matricula or not numero_serie:
-                continue
+            sn = get_val(row, 'SN')
+            if not matricula or not sn: continue
 
-            # Aeronave Upsert (Cache)
+            # 1. Aeronave Upsert
             aeronave = aero_cache.get(matricula)
             if not aeronave:
-                aeronave = Aeronave(matricula=matricula, numero_serie=numero_serie)
+                aeronave = Aeronave(matricula=matricula, numero_serie=sn)
                 session.add(aeronave)
-                session.flush() # Necessário flush para obter o ID
+                session.flush()
                 aero_cache[matricula] = aeronave
-            else:
-                if aeronave.numero_serie != numero_serie:
-                    aeronave.numero_serie = numero_serie
-                    session.add(aeronave)
+            elif aeronave.numero_serie != sn:
+                aeronave.numero_serie = sn
+                session.add(aeronave)
 
-            fadt = get_val(row, 'FADT')
             codigo_dt = get_val(row, 'DIRETIVA TÉCNICA')
-            
-            if not fadt or not codigo_dt:
-                continue
+            if not codigo_dt: continue
 
+            # 2. DiretivaTecnica Upsert (Mestre)
+            dt = dt_cache.get(codigo_dt)
             dt_data = {
-                "codigo_diretiva": codigo_dt,
-                "fadt": fadt,
+                "codigo": codigo_dt,
                 "objetivo": get_val(row, 'OBJETIVO'),
                 "classe": get_val(row, 'CLA'),
                 "categoria": get_val(row, 'CAT'),
                 "tipo": get_val(row, 'TIPO INCORPORAÇÃO'),
                 "natureza": get_val(row, 'NAT'),
-                "ordem": get_val(row, 'ORDEM'),
-                "especialidade": get_val(row, 'ESPECIALIDADE') # Adicionado para garantir suporte se houver
+                "especialidade": get_val(row, 'ESPECIALIDADE'),
+                "updated_at": datetime.now(timezone.utc)
             }
-
-            # Diretiva Upsert (Cache)
-            diretiva = dt_cache.get(fadt)
-            if not diretiva:
-                diretiva = Diretiva(**dt_data)
-                session.add(diretiva)
+            if not dt:
+                dt = DiretivaTecnica(**dt_data)
+                session.add(dt)
                 session.flush()
-                dt_cache[fadt] = diretiva
+                dt_cache[codigo_dt] = dt
             else:
                 for key, value in dt_data.items():
-                    setattr(diretiva, key, value)
-                session.add(diretiva)
+                    setattr(dt, key, value)
+                session.add(dt)
 
-            # Link Upsert (Cache)
-            cache_key = (aeronave.id, diretiva.id)
-            link = link_cache.get(cache_key)
+            # 3. DiretivaItem Upsert (Subordinado)
+            fadt = get_val(row, 'FADT')
+            tarefa = get_val(row, 'TAREFA') # Coluna opcional no CSV, tratar se existir
+            ordem_ref = get_val(row, 'ORDEM')
+            chave = generate_chave_item(codigo_dt, fadt, tarefa, ordem_ref)
             
-            link_data = {
-                "aeronave_id": aeronave.id,
-                "diretiva_id": diretiva.id,
-                "status": get_val(row, 'STATUS') or "Pendente",
-                "ordem_aplicada": get_val(row, 'ORDEM'),
-                "observacao": get_val(row, 'OBSERVAÇÕES') or get_val(row, 'PJ'),
-            }
+            # Busca item no banco (pode haver muitos itens, cache local por mestre se necessário)
+            item = session.exec(
+                select(DiretivaItem).where(
+                    DiretivaItem.diretiva_tecnica_id == dt.id,
+                    DiretivaItem.chave_item == chave
+                )
+            ).first()
 
+            if not item:
+                item = DiretivaItem(
+                    diretiva_tecnica_id=dt.id,
+                    fadt=fadt,
+                    tarefa=tarefa,
+                    ordem_referencia=ordem_ref,
+                    chave_item=chave,
+                    descricao_item=dt.objetivo
+                )
+                session.add(item)
+                session.flush()
+
+            # 4. DiretivaItemAeronave Upsert (Estado Operacional)
+            link = session.exec(
+                select(DiretivaItemAeronave).where(
+                    DiretivaItemAeronave.aeronave_id == aeronave.id,
+                    DiretivaItemAeronave.diretiva_item_id == item.id
+                )
+            ).first()
+
+            status_csv = get_val(row, 'STATUS') or "Pendente"
+            
             if not link:
-                link = DiretivaAeronave(**link_data)
+                link = DiretivaItemAeronave(
+                    aeronave_id=aeronave.id,
+                    diretiva_item_id=item.id,
+                    status=status_csv,
+                    ordem_aplicada=ordem_ref,
+                    observacao=get_val(row, 'OBSERVAÇÕES') or get_val(row, 'PJ'),
+                    origem_status="csv",
+                    ultima_referencia_snapshot=snapshot_ts
+                )
                 link.tendencia = 3
-                session.add(link)
-                link_cache[cache_key] = link
             else:
-                for key, value in link_data.items():
-                    if value is not None:
-                        setattr(link, key, value)
-                session.add(link)
-
-            link.diretiva = diretiva
+                link.status = status_csv
+                link.ordem_aplicada = ordem_ref
+                link.observacao = get_val(row, 'OBSERVAÇÕES') or get_val(row, 'PJ')
+                link.ultima_referencia_snapshot = snapshot_ts
+                link.origem_status = "csv"
+                link.concluida_automaticamente = False # Reset se reapareceu no CSV
+            
+            session.add(link)
+            session.flush()
             link.calculate_gut()
+            links_processados_ids.append(link.id)
+            processed_count += 1
 
-            if (i + 1) % BATCH_SIZE == 0:
-                session.commit()
+        # 5. Snapshot Logic: Auto-concluir itens que não vieram no CSV para estas aeronaves
+        for m in matriculas_no_csv:
+            aero = aero_cache.get(m)
+            if not aero: continue
+            
+            # Localiza links desta aeronave que NÃO foram processados neste lote e NÃO estão concluídos
+            ausentes = session.exec(
+                select(DiretivaItemAeronave).where(
+                    DiretivaItemAeronave.aeronave_id == aero.id,
+                    DiretivaItemAeronave.id.not_in(links_processados_ids),
+                    DiretivaItemAeronave.status != "Concluída"
+                )
+            ).all()
+            
+            for link_ausente in ausentes:
+                link_ausente.status = "Concluída"
+                link_ausente.concluida_automaticamente = True
+                link_ausente.observacao = f"[AUTO] Concluída via snapshot em {snapshot_ts}. Motivo: Item ausente no CSV."
+                session.add(link_ausente)
 
         session.commit()
     
-    return len(df)
+    return processed_count

@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.database import init_db, engine
 from sqlmodel import Session, select
-from app.models import Diretiva, Aeronave, DiretivaAeronave
+from app.models import Aeronave, DiretivaTecnica, DiretivaItem, DiretivaItemAeronave
 from app.users.models import User
 from app.users import security
 import uuid
@@ -47,11 +47,18 @@ def test_system_integrity():
     uid = str(uuid.uuid4())[:8]
     with Session(engine) as session:
         a = Aeronave(matricula=f"TEST-{uid}", numero_serie=f"SN-{uid}")
-        d = Diretiva(codigo_diretiva=f"DT-{uid}", fadt=f"FADT-{uid}", objetivo="TEST PDF VISIBILITY")
         session.add(a)
-        session.add(d)
         session.flush()
-        link = DiretivaAeronave(aeronave_id=a.id, diretiva_id=d.id, status="Pendente", pdf_path="test_file.pdf")
+        
+        dt = DiretivaTecnica(codigo=f"DT-{uid}", objetivo="TEST PDF VISIBILITY", especialidade="ELETRÔNICA")
+        session.add(dt)
+        session.flush()
+        
+        item = DiretivaItem(diretiva_tecnica_id=dt.id, fadt=f"FADT-{uid}", chave_item=f"DT-{uid}|FADT-{uid}||", descricao_item="TEST ITEM")
+        session.add(item)
+        session.flush()
+        
+        link = DiretivaItemAeronave(aeronave_id=a.id, diretiva_item_id=item.id, status="Pendente", pdf_path="test_file.pdf")
         session.add(link)
         session.commit()
         link_id = link.id
@@ -64,20 +71,20 @@ def test_system_integrity():
 
     # 4. Testar Restrição de Especialidade (Inspetor)
     print("4. Testando restrição de especialidade (Inspetor)...")
-    # Criar inspetor de ELÉTRICA
+    # Criar inspetor de ELÉTRICA (BET = ELT, BEI = ELE, etc - use matching string for mapping)
+    # Mapping in main.py: "BMA": ["MOT", "CEL", "HID"], "BET": ["ELT"]...
+    # mapping is career -> authorized area. "ELÉTRICA" is not a career, "BEI" is.
     with Session(engine) as session:
-        user_in = User(username=f"insp_{uid}", email=f"insp_{uid}@test.com", hashed_password="hashed", role="inspetor", especialidade="ELÉTRICA")
+        # Create inspector with career 'BEI' (Electrical)
+        user_in = User(username=f"insp_{uid}", email=f"insp_{uid}@test.com", hashed_password="hashed", role="inspetor", especialidade="BEI")
         session.add(user_in)
-        # Criar diretiva de ELETRÔNICA
-        d_eletronica = session.exec(select(Diretiva).where(Diretiva.fadt == f"FADT-{uid}")).one()
-        d_eletronica.especialidade = "ELETRÔNICA"
-        session.add(d_eletronica)
+        # Directive is 'ELETRÔNICA' -> 'ELT' mapping. Career 'BEI' maps to 'ELE'. Should block.
         session.commit()
     
     token = security.create_access_token(data={"sub": f"insp_{uid}"})
     client.cookies.set("access_token", token)
     
-    # Tentar editar diretiva de ELETRÔNICA sendo de ELÉTRICA
+    # Tentar editar diretiva de ELETRÔNICA sendo de ELÉTRICA (Career BEI)
     response = client.post(f"/directives/{link_id}", data={"status": "Concluída", "observacoes": "tentativa"})
     assert response.status_code == 403
     print("   [OK] Inspetor impedido de editar especialidade diferente.")

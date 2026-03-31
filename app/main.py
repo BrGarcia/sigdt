@@ -16,7 +16,7 @@ from jose import jwt
 from typing import List, Optional
 
 from app.database import init_db, get_session, engine
-from app.models import Diretiva, Aeronave, DiretivaAeronave, StatusDiretiva
+from app.models import Aeronave, DiretivaTecnica, DiretivaItem, DiretivaItemAeronave, StatusDiretiva
 from app.services.csv_service import process_csv
 from app.services.pdf_parser import parse_at_pdf
 
@@ -190,10 +190,10 @@ async def read_root(
     offset = (page - 1) * per_page
     
     # Count total
-    total_count = session.exec(select(func.count(DiretivaAeronave.id))).one()
+    total_count = session.exec(select(func.count(DiretivaItemAeronave.id))).one()
     total_pages = max(1, (total_count + per_page - 1) // per_page)
 
-    statement = select(DiretivaAeronave).order_by(desc(DiretivaAeronave.gut)).offset(offset).limit(per_page)
+    statement = select(DiretivaItemAeronave).order_by(desc(DiretivaItemAeronave.gut)).offset(offset).limit(per_page)
     diretiva_links = session.exec(statement).all()
     
     return templates.TemplateResponse(request=request, name="index.html", context={
@@ -233,27 +233,23 @@ async def upload_csv(
     return RedirectResponse(url="/", status_code=303)
 
 def apply_filters(statement, search: Optional[str] = None, status: Optional[str] = None, especialidade: List[str] = []):
+    from sqlmodel import or_
     if search:
         search_filter = f"%{search}%"
-        # Import Diretiva, Aeronave, or_ here if needed or use from outer scope
-        from app.models import Diretiva, Aeronave, DiretivaAeronave
-        from sqlmodel import or_
         statement = statement.where(
             or_(
                 Aeronave.numero_serie.like(search_filter), 
-                Diretiva.codigo_diretiva.like(search_filter),
-                Aeronave.matricula.like(search_filter)
+                Aeronave.matricula.like(search_filter),
+                DiretivaTecnica.codigo.like(search_filter),
+                DiretivaItem.fadt.like(search_filter)
             )
         )
         
     if status:
-        from app.models import DiretivaAeronave
-        statement = statement.where(DiretivaAeronave.status == status)
+        statement = statement.where(DiretivaItemAeronave.status == status)
         
     if especialidade:
-        from app.models import Diretiva
-        from sqlmodel import or_
-        conditions = [Diretiva.especialidade.like(f"%{esp}%") for esp in especialidade if esp]
+        conditions = [DiretivaTecnica.especialidade.like(f"%{esp}%") for esp in especialidade if esp]
         if conditions:
             statement = statement.where(or_(*conditions))
     return statement
@@ -273,7 +269,7 @@ async def list_directives(
     per_page = 50
     offset = (page - 1) * per_page
     
-    statement = select(DiretivaAeronave).join(Diretiva).join(Aeronave).order_by(desc(DiretivaAeronave.gut))
+    statement = select(DiretivaItemAeronave).join(DiretivaItem).join(DiretivaTecnica).join(Aeronave).order_by(desc(DiretivaItemAeronave.gut))
     statement = apply_filters(statement, search, status, especialidade)
     
     count_statement = select(func.count()).select_from(statement.subquery())
@@ -298,7 +294,7 @@ async def get_directive_details(
     if not check_gatekeeper(request):
         return RedirectResponse(url="/gatekeeper")
         
-    link = session.get(DiretivaAeronave, diretiva_id)
+    link = session.get(DiretivaItemAeronave, diretiva_id)
     if not link:
         raise HTTPException(status_code=404, detail="Vínculo de Diretiva not found")
     
@@ -318,12 +314,12 @@ async def update_directive_details(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_inspetor_user)
 ):
-    link = session.get(DiretivaAeronave, diretiva_id)
+    link = session.get(DiretivaItemAeronave, diretiva_id)
     if not link:
         raise HTTPException(status_code=404, detail="Vínculo de Diretiva not found")
     
     # Check specialty permission based on mapping (User Career -> Directive Area)
-    if not has_specialty_permission(current_user, link.diretiva.especialidade):
+    if not has_specialty_permission(current_user, link.diretiva_item.diretiva_tecnica.especialidade):
         raise HTTPException(status_code=403, detail="Você não tem permissão para alterar diretivas desta especialidade.")
 
     # A7: Validate status using Enum
@@ -334,6 +330,7 @@ async def update_directive_details(
     link.status = status
     link.observacao = observacoes
     link.data_status = datetime.now(timezone.utc)
+    link.origem_status = "manual"
 
     # Handle PDF upload
     if pdf_file and pdf_file.filename:
@@ -403,12 +400,12 @@ async def delete_attachment(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_inspetor_user)
 ):
-    link = session.get(DiretivaAeronave, diretiva_id)
+    link = session.get(DiretivaItemAeronave, diretiva_id)
     if not link:
         raise HTTPException(status_code=404, detail="Vínculo de Diretiva not found")
     
     # Check specialty permission based on mapping
-    if not has_specialty_permission(current_user, link.diretiva.especialidade):
+    if not has_specialty_permission(current_user, link.diretiva_item.diretiva_tecnica.especialidade):
         raise HTTPException(status_code=403, detail="Você não tem permissão para alterar diretivas desta especialidade.")
 
     if link.pdf_path:
@@ -436,7 +433,7 @@ async def update_tendencia(
     tendencia: int = Form(...),
     session: Session = Depends(get_session)
 ):
-    link = session.get(DiretivaAeronave, diretiva_id)
+    link = session.get(DiretivaItemAeronave, diretiva_id)
     if link:
         link.tendencia = tendencia
         link.calculate_gut()
@@ -462,7 +459,7 @@ async def export_xlsx(
     status: Optional[str] = None,
     especialidade: List[str] = Query(None)
 ):
-    statement = select(DiretivaAeronave).join(Diretiva).join(Aeronave).order_by(desc(DiretivaAeronave.gut))
+    statement = select(DiretivaItemAeronave).join(DiretivaItem).join(DiretivaTecnica).join(Aeronave).order_by(desc(DiretivaItemAeronave.gut))
     statement = apply_filters(statement, search, status, especialidade)
     
     links = session.exec(statement).all()
@@ -474,17 +471,18 @@ async def export_xlsx(
 
     data = []
     for link in links:
+        dt = link.diretiva_item.diretiva_tecnica
+        item = link.diretiva_item
         data.append({
-            # Item 11: Campo 'pn' removido do modelo na V2 — coluna removida do export
             'MATRICULA': sanitize_formula(link.aeronave.matricula),
             'NUMERO_SERIE': sanitize_formula(link.aeronave.numero_serie),
-            'DIRETIVA_TECNICA': sanitize_formula(link.diretiva.codigo_diretiva),
-            'FADT': sanitize_formula(link.diretiva.fadt),
+            'DIRETIVA_TECNICA': sanitize_formula(dt.codigo),
+            'FADT': sanitize_formula(item.fadt),
             'STATUS': sanitize_formula(link.status),
-            'CLA': sanitize_formula(link.diretiva.classe),
-            'CAT': sanitize_formula(link.diretiva.categoria),
-            'OBJETIVO': sanitize_formula(link.diretiva.objetivo),
-            'ESPECIALIDADE': sanitize_formula(link.diretiva.especialidade),
+            'CLA': sanitize_formula(dt.classe),
+            'CAT': sanitize_formula(dt.categoria),
+            'OBJETIVO': sanitize_formula(dt.objetivo),
+            'ESPECIALIDADE': sanitize_formula(dt.especialidade),
             'OBSERVACOES': sanitize_formula(link.observacao),
             'GUT': link.gut
         })
@@ -532,14 +530,13 @@ async def list_master_directives(
     per_page = 50
     offset = (page - 1) * per_page
     
-    statement = select(Diretiva).order_by(Diretiva.codigo_diretiva)
+    statement = select(DiretivaTecnica).order_by(DiretivaTecnica.codigo)
     if search:
         search_filter = f"%{search}%"
         statement = statement.where(
             or_(
-                Diretiva.codigo_diretiva.like(search_filter), 
-                Diretiva.fadt.like(search_filter),
-                Diretiva.objetivo.like(search_filter)
+                DiretivaTecnica.codigo.like(search_filter), 
+                DiretivaTecnica.objetivo.like(search_filter)
             )
         )
     
@@ -565,7 +562,7 @@ async def get_master_directive_edit(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_inspetor_user)
 ):
-    master_dt = session.get(Diretiva, id)
+    master_dt = session.get(DiretivaTecnica, id)
     if not master_dt:
         raise HTTPException(status_code=404, detail="Diretiva Master not found")
     
@@ -578,7 +575,7 @@ async def get_master_directive_edit(
 async def update_master_directive(
     request: Request,
     id: int,
-    codigo_diretiva: str = Form(...),
+    codigo: str = Form(...),
     objetivo: str = Form(...),
     classe: str = Form(...),
     categoria: str = Form(...),
@@ -586,27 +583,27 @@ async def update_master_directive(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_inspetor_user)
 ):
-    master_dt = session.get(Diretiva, id)
+    master_dt = session.get(DiretivaTecnica, id)
     if not master_dt:
         raise HTTPException(status_code=404, detail="Diretiva Master not found")
     
     # Update master data
-    master_dt.codigo_diretiva = codigo_diretiva
+    master_dt.codigo = codigo
     master_dt.objetivo = objetivo
     master_dt.classe = classe
     master_dt.categoria = categoria
     master_dt.especialidade = ";".join(especialidades)
+    master_dt.updated_at = datetime.now(timezone.utc)
     
     session.add(master_dt)
     session.commit()
     session.refresh(master_dt)
     
-    # Recalculate GUT for all aircraft links using this master DT
-    statement = select(DiretivaAeronave).where(DiretivaAeronave.diretiva_id == master_dt.id)
-    links = session.exec(statement).all()
-    for link in links:
-        link.calculate_gut()
-        session.add(link)
+    # Recalculate GUT for all aircraft links using items from this master DT
+    for item in master_dt.items:
+        for link in item.aeronave_links:
+            link.calculate_gut()
+            session.add(link)
     session.commit()
     
     return RedirectResponse(url="/master-directives", status_code=303)

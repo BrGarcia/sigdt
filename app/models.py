@@ -1,10 +1,12 @@
 from typing import Optional, List
 from sqlmodel import SQLModel, Field, Column, Relationship
-from sqlalchemy import Text, UniqueConstraint
+from sqlalchemy import Text, UniqueConstraint, String
 from datetime import datetime, timezone
-from enum import Enum
+import enum
 
-class StatusDiretiva(str, Enum):
+# --- MODELOS ---
+
+class StatusDiretiva(str, enum.Enum):
     PENDENTE = "Pendente"
     EM_ANDAMENTO = "Em andamento"
     CONCLUIDA = "Concluída"
@@ -16,52 +18,77 @@ class Aeronave(SQLModel, table=True):
     numero_serie: str = Field(index=True, unique=True)
     
     # Relationship: One aircraft has many directive links
-    diretiva_links: List["DiretivaAeronave"] = Relationship(back_populates="aeronave")
+    item_links: List["DiretivaItemAeronave"] = Relationship(back_populates="aeronave")
 
-class Diretiva(SQLModel, table=True):
+class DiretivaTecnica(SQLModel, table=True):
+    __tablename__ = "diretiva_tecnica"
     id: Optional[int] = Field(default=None, primary_key=True)
-    codigo_diretiva: str = Field(index=True)
-    fadt: str = Field(index=True, unique=True) # Unique key
+    codigo: str = Field(index=True, unique=True) # Ex: AD 2024-01
     objetivo: Optional[str] = Field(default=None, sa_column=Column(Text))
-    classe: Optional[str] = None # cla (M, R, O, I)
-    categoria: Optional[str] = None # cat (I, U, R)
-    tipo: Optional[str] = None # tipo_incorporacao
-    natureza: Optional[str] = None # nat
-    ordem: Optional[str] = None
+    classe: Optional[str] = None # M, R, O, I
+    categoria: Optional[str] = None # I, U, R
+    tipo: Optional[str] = None
+    natureza: Optional[str] = None
     especialidade: Optional[str] = Field(default=None, index=True)
-    
-    # Relationship: One master directive has many links to aircraft
-    aeronave_links: List["DiretivaAeronave"] = Relationship(back_populates="diretiva")
+    ativa: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class DiretivaAeronave(SQLModel, table=True):
-    __table_args__ = (UniqueConstraint("aeronave_id", "diretiva_id"),)
-    
+    items: List["DiretivaItem"] = Relationship(back_populates="diretiva_tecnica")
+
+class DiretivaItem(SQLModel, table=True):
+    __tablename__ = "diretiva_item"
+    __table_args__ = (UniqueConstraint("diretiva_tecnica_id", "chave_item"),)
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    diretiva_tecnica_id: int = Field(foreign_key="diretiva_tecnica.id")
+    fadt: Optional[str] = Field(default=None, index=True)
+    tarefa: Optional[str] = None
+    ordem_referencia: Optional[str] = None
+    chave_item: str = Field(index=True) # Chave técnica de deduplicação
+    descricao_item: Optional[str] = Field(default=None, sa_column=Column(Text))
+    ativo: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    diretiva_tecnica: DiretivaTecnica = Relationship(back_populates="items")
+    aeronave_links: List["DiretivaItemAeronave"] = Relationship(back_populates="diretiva_item")
+
+class DiretivaItemAeronave(SQLModel, table=True):
+    __tablename__ = "diretiva_item_aeronave"
+    __table_args__ = (UniqueConstraint("aeronave_id", "diretiva_item_id"),)
+
     id: Optional[int] = Field(default=None, primary_key=True)
     aeronave_id: int = Field(foreign_key="aeronave.id")
-    diretiva_id: int = Field(foreign_key="diretiva.id")
+    diretiva_item_id: int = Field(foreign_key="diretiva_item.id")
     
-    status: Optional[str] = Field(default="Pendente")
+    status: str = Field(default="Pendente")
     data_aplicacao: Optional[datetime] = None
-    data_status: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
+    data_status: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     ordem_aplicada: Optional[str] = None
     observacao: Optional[str] = Field(default=None, sa_column=Column(Text))
     pdf_path: Optional[str] = None
     
-    # GUT Matrix fields (specific to this aircraft instance)
     tendencia: int = Field(default=3)
     gut: float = Field(default=0.0)
+    
+    origem_status: str = Field(default="csv") # csv, manual
+    ultima_referencia_snapshot: Optional[str] = None
+    concluida_automaticamente: bool = Field(default=False)
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    # Relationships
-    aeronave: Aeronave = Relationship(back_populates="diretiva_links")
-    diretiva: Diretiva = Relationship(back_populates="aeronave_links")
+    aeronave: Aeronave = Relationship(back_populates="item_links")
+    diretiva_item: DiretivaItem = Relationship(back_populates="aeronave_links")
 
     def calculate_gut(self):
-        # Mappings based on ESPECIFICACOES.md
         g_map = {"M": 5, "R": 4, "O": 2, "I": 1}
         u_map = {"I": 5, "U": 4, "R": 2}
         
-        g = g_map.get(self.diretiva.classe if self.diretiva else "I", 1)
-        u = u_map.get(self.diretiva.categoria if self.diretiva else "R", 2)
+        dt = self.diretiva_item.diretiva_tecnica if self.diretiva_item else None
+        g = g_map.get(dt.classe if dt else "I", 1)
+        u = u_map.get(dt.categoria if dt else "R", 2)
         t = self.tendencia
         
         self.gut = g * u * t
