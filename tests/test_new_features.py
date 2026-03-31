@@ -3,7 +3,7 @@ import pytest
 from app.main import app, SECRET_KEY
 from app.database import init_db
 from sqlmodel import Session, select
-from app.models import Diretiva, Aeronave, DiretivaAeronave
+from app.models import Aeronave, DiretivaTecnica, DiretivaItem, DiretivaItemAeronave
 from app.users.models import User
 from app.users import security
 import uuid
@@ -46,11 +46,15 @@ def test_directive_details_has_especialidade():
         session.add(a)
         session.flush()
         
-        d = Diretiva(codigo_diretiva=f"DT-{uid}", fadt=f"FADT-{uid}", objetivo="OBJ-TEST")
-        session.add(d)
+        dt = DiretivaTecnica(codigo=f"DT-{uid}", objetivo="OBJ-TEST")
+        session.add(dt)
+        session.flush()
+
+        item = DiretivaItem(diretiva_tecnica_id=dt.id, fadt=f"FADT-{uid}", chave_item=f"CHAVE-{uid}")
+        session.add(item)
         session.flush()
         
-        link = DiretivaAeronave(aeronave_id=a.id, diretiva_id=d.id, status="Pendente")
+        link = DiretivaItemAeronave(aeronave_id=a.id, diretiva_item_id=item.id, status="Pendente")
         session.add(link)
         session.commit()
         session.refresh(link)
@@ -73,11 +77,15 @@ def test_directive_details_edit_fields_as_admin():
         session.add(a)
         session.flush()
         
-        d = Diretiva(codigo_diretiva=f"DT-A-{uid}", fadt=f"FADT-A-{uid}", objetivo="OBJ-TEST-2")
-        session.add(d)
+        dt = DiretivaTecnica(codigo=f"DT-A-{uid}", objetivo="OBJ-TEST-2")
+        session.add(dt)
+        session.flush()
+
+        item = DiretivaItem(diretiva_tecnica_id=dt.id, fadt=f"FADT-A-{uid}", chave_item=f"CHAVE-A-{uid}")
+        session.add(item)
         session.flush()
         
-        link = DiretivaAeronave(aeronave_id=a.id, diretiva_id=d.id, status="Pendente")
+        link = DiretivaItemAeronave(aeronave_id=a.id, diretiva_item_id=item.id, status="Pendente")
         session.add(link)
         session.commit()
         session.refresh(link)

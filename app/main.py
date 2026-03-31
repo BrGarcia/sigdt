@@ -229,7 +229,7 @@ async def upload_csv(
             raise
         except Exception:
             raise HTTPException(status_code=400, detail=f"Não foi possível ler o arquivo '{file.filename}'. Verifique o formato CSV.")
-        process_csv(content.decode('utf-8'))
+        process_csv(content.decode('utf-8'), filename=file.filename)
     return RedirectResponse(url="/", status_code=303)
 
 def apply_filters(statement, search: Optional[str] = None, status: Optional[str] = None, especialidade: List[str] = []):

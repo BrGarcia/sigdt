@@ -1,4 +1,4 @@
-"""data: migrate legacy data to new model
+"""data: migrate legacy data to new model (ROBUST VERSION)
 
 Revision ID: 1d3fc7e34187
 Revises: e6ca8f306a0d
@@ -6,11 +6,9 @@ Create Date: 2026-03-30 15:18:47.160437
 
 """
 from typing import Sequence, Union
-
 from alembic import op
 import sqlalchemy as sa
-import sqlmodel
-
+from datetime import datetime, timezone
 
 # revision identifiers, used by Alembic.
 revision: str = '1d3fc7e34187'
@@ -18,56 +16,63 @@ down_revision: Union[str, Sequence[str], None] = 'e6ca8f306a0d'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-
-from datetime import datetime, timezone
-
 def upgrade() -> None:
-    # Use direct SQL via op.execute for data migration
     connection = op.get_bind()
-    
     now = datetime.now(timezone.utc).isoformat()
     
-    # 1. Migrate Diretiva -> DiretivaTecnica (Deduplicating by codigo_diretiva)
-    # We pick the one with the longest 'objetivo' as the most 'complete' record for metadata
-    diretivas_master = connection.execute(sa.text("""
+    # 1. MESTRE: Diretiva -> DiretivaTecnica
+    # Consolidação: Agrupar por codigo_diretiva e pegar o registro "mais completo"
+    # (critério: soma de campos não nulos)
+    diretivas_raw = connection.execute(sa.text("""
         SELECT codigo_diretiva, objetivo, classe, categoria, tipo, natureza, especialidade
         FROM diretiva
-        ORDER BY LENGTH(COALESCE(objetivo, '')) DESC
     """)).fetchall()
     
-    processed_codigos = set()
-    codigo_to_id = {}
-
-    for d in diretivas_master:
-        if d.codigo_diretiva in processed_codigos:
-            continue
+    mestre_data = {} # codigo -> data_dict
+    for d in diretivas_raw:
+        codigo = d.codigo_diretiva
+        if not codigo: continue
+        
+        # Calcular score de completude
+        score = sum(1 for v in [d.objetivo, d.classe, d.categoria, d.tipo, d.natureza, d.especialidade] if v and str(v).strip())
+        
+        if codigo not in mestre_data or score > mestre_data[codigo]['score']:
+            mestre_data[codigo] = {
+                'objetivo': d.objetivo,
+                'classe': d.classe,
+                'categoria': d.categoria,
+                'tipo': d.tipo,
+                'natureza': d.natureza,
+                'especialidade': d.especialidade,
+                'score': score
+            }
             
+    codigo_to_id = {}
+    for codigo, data in mestre_data.items():
         connection.execute(sa.text("""
             INSERT INTO diretiva_tecnica (codigo, objetivo, classe, categoria, tipo, natureza, especialidade, ativa, created_at, updated_at)
             VALUES (:codigo, :objetivo, :classe, :categoria, :tipo, :natureza, :especialidade, 1, :now, :now)
         """), {
-            "codigo": d.codigo_diretiva,
-            "objetivo": d.objetivo,
-            "classe": d.classe,
-            "categoria": d.categoria,
-            "tipo": d.tipo,
-            "natureza": d.natureza,
-            "especialidade": d.especialidade,
+            "codigo": codigo,
+            "objetivo": data['objetivo'],
+            "classe": data['classe'],
+            "categoria": data['categoria'],
+            "tipo": data['tipo'],
+            "natureza": data['natureza'],
+            "especialidade": data['especialidade'],
             "now": now
         })
-        
-        # Get the inserted ID
         new_id = connection.execute(sa.text("SELECT last_insert_rowid()")).scalar()
-        codigo_to_id[d.codigo_diretiva] = new_id
-        processed_codigos.add(d.codigo_diretiva)
+        codigo_to_id[codigo] = new_id
 
-    # 2. Migrate Diretiva -> DiretivaItem (Deduplicating by dt_id + chave_item)
+    # 2. ITEM: Diretiva -> DiretivaItem (Deduplicação por dt_id + chave_item)
+    # Precisamos mapear todos os IDs antigos de 'diretiva' para os novos IDs de 'diretiva_item'
     old_items = connection.execute(sa.text("""
-        SELECT d.id as old_id, d.codigo_diretiva, d.fadt, d.ordem, d.objetivo
-        FROM diretiva d
+        SELECT id as old_id, codigo_diretiva, fadt, ordem, objetivo
+        FROM diretiva
     """)).fetchall()
     
-    processed_items = set() # (dt_id, chave_item)
+    item_cache = {} # (dt_id, chave_item) -> new_item_id
     old_id_to_new_item_id = {}
 
     for d in old_items:
@@ -76,11 +81,12 @@ def upgrade() -> None:
 
         fadt_clean = str(d.fadt or "").strip().upper()
         ordem_clean = str(d.ordem or "").strip().upper()
+        # Chave item: CODIGO|FADT|TAREFA|ORDEM (Tarefa é nula no legado)
         chave_item = f"{d.codigo_diretiva}|{fadt_clean}||{ordem_clean}"
         
-        item_key = (dt_id, chave_item)
+        cache_key = (dt_id, chave_item)
         
-        if item_key not in processed_items:
+        if cache_key not in item_cache:
             connection.execute(sa.text("""
                 INSERT INTO diretiva_item (diretiva_tecnica_id, fadt, ordem_referencia, chave_item, descricao_item, ativo, created_at, updated_at)
                 VALUES (:dt_id, :fadt, :ordem, :chave, :desc, 1, :now, :now)
@@ -93,21 +99,17 @@ def upgrade() -> None:
                 "now": now
             })
             new_item_id = connection.execute(sa.text("SELECT last_insert_rowid()")).scalar()
-            processed_items.add(item_key)
-            old_id_to_new_item_id[d.old_id] = new_item_id
-        else:
-            # If item already exists, find its ID to map links correctly
-            existing_id = connection.execute(sa.text("SELECT id FROM diretiva_item WHERE diretiva_tecnica_id = :dt_id AND chave_item = :chave"), 
-                                          {"dt_id": dt_id, "chave": chave_item}).scalar()
-            old_id_to_new_item_id[d.old_id] = existing_id
+            item_cache[cache_key] = new_item_id
+            
+        old_id_to_new_item_id[d.old_id] = item_cache[cache_key]
 
-    # 3. Migrate DiretivaAeronave -> DiretivaItemAeronave
-    # Deduplicating (aeronave_id, item_id) - picking the most recent data_status link if multiple exist
+    # 3. VÍNCULOS: DiretivaAeronave -> DiretivaItemAeronave
+    # Consolidação: Para (aeronave, item), pegar o status mais recente
     old_links = connection.execute(sa.text("""
-        SELECT da.aeronave_id, da.diretiva_id, da.status, da.data_aplicacao, da.data_status, 
-               da.ordem_aplicada, da.observacao, da.pdf_path, da.tendencia, da.gut
-        FROM diretivaaeronave da
-        ORDER BY da.data_status DESC
+        SELECT aeronave_id, diretiva_id, status, data_aplicacao, data_status, 
+               ordem_aplicada, observacao, pdf_path, tendencia, gut
+        FROM diretivaaeronave
+        ORDER BY data_status DESC
     """)).fetchall()
     
     processed_links = set() # (aeronave_id, item_id)
@@ -140,9 +142,7 @@ def upgrade() -> None:
         })
         processed_links.add(link_key)
 
-
 def downgrade() -> None:
-    """Downgrade schema."""
     op.execute("DELETE FROM diretiva_item_aeronave")
     op.execute("DELETE FROM diretiva_item")
     op.execute("DELETE FROM diretiva_tecnica")

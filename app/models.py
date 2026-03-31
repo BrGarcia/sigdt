@@ -19,6 +19,18 @@ class Aeronave(SQLModel, table=True):
     
     # Relationship: One aircraft has many directive links
     item_links: List["DiretivaItemAeronave"] = Relationship(back_populates="aeronave")
+    snapshots: List["Snapshot"] = Relationship(back_populates="aeronave")
+
+class Snapshot(SQLModel, table=True):
+    __tablename__ = "snapshot"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    aeronave_id: int = Field(foreign_key="aeronave.id")
+    data_hora: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    nome_arquivo: Optional[str] = None
+    hash_conteudo: Optional[str] = None
+    
+    aeronave: Aeronave = Relationship(back_populates="snapshots")
+    item_links: List["DiretivaItemAeronave"] = Relationship(back_populates="snapshot")
 
 class DiretivaTecnica(SQLModel, table=True):
     __tablename__ = "diretiva_tecnica"
@@ -61,6 +73,7 @@ class DiretivaItemAeronave(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     aeronave_id: int = Field(foreign_key="aeronave.id")
     diretiva_item_id: int = Field(foreign_key="diretiva_item.id")
+    snapshot_id: Optional[int] = Field(default=None, foreign_key="snapshot.id")
     
     status: str = Field(default="Pendente")
     data_aplicacao: Optional[datetime] = None
@@ -81,6 +94,7 @@ class DiretivaItemAeronave(SQLModel, table=True):
 
     aeronave: Aeronave = Relationship(back_populates="item_links")
     diretiva_item: DiretivaItem = Relationship(back_populates="aeronave_links")
+    snapshot: Optional[Snapshot] = Relationship(back_populates="item_links")
 
     def calculate_gut(self):
         g_map = {"M": 5, "R": 4, "O": 2, "I": 1}

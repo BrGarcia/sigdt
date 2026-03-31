@@ -40,6 +40,16 @@ def upgrade() -> None:
         batch_op.create_index(batch_op.f('ix_diretiva_tecnica_codigo'), ['codigo'], unique=True)
         batch_op.create_index(batch_op.f('ix_diretiva_tecnica_especialidade'), ['especialidade'], unique=False)
 
+    op.create_table('snapshot',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('aeronave_id', sa.Integer(), nullable=False),
+    sa.Column('data_hora', sa.DateTime(), nullable=False),
+    sa.Column('nome_arquivo', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('hash_conteudo', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.ForeignKeyConstraint(['aeronave_id'], ['aeronave.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+
     op.create_table('diretiva_item',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('diretiva_tecnica_id', sa.Integer(), nullable=False),
@@ -63,6 +73,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('aeronave_id', sa.Integer(), nullable=False),
     sa.Column('diretiva_item_id', sa.Integer(), nullable=False),
+    sa.Column('snapshot_id', sa.Integer(), nullable=True),
     sa.Column('status', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('data_aplicacao', sa.DateTime(), nullable=True),
     sa.Column('data_status', sa.DateTime(), nullable=False),
@@ -78,6 +89,7 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['aeronave_id'], ['aeronave.id'], ),
     sa.ForeignKeyConstraint(['diretiva_item_id'], ['diretiva_item.id'], ),
+    sa.ForeignKeyConstraint(['snapshot_id'], ['snapshot.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('aeronave_id', 'diretiva_item_id')
     )
@@ -93,6 +105,7 @@ def downgrade() -> None:
         batch_op.drop_index(batch_op.f('ix_diretiva_item_chave_item'))
 
     op.drop_table('diretiva_item')
+    op.drop_table('snapshot')
     with op.batch_alter_table('diretiva_tecnica', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_diretiva_tecnica_especialidade'))
         batch_op.drop_index(batch_op.f('ix_diretiva_tecnica_codigo'))

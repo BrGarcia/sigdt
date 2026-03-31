@@ -35,4 +35,16 @@
 - [x] Rate Limiting in-memory com janela deslizante (5 tentativas / 60s).
 
 ---
-**Referência:** Paramos no Passo 7 do ajuste fino (Projeto FAB).
+
+## Versão 4.0.0-dev (branch: `v4.0.0-dev`)
+
+### Status Atual: Refatoração de Banco de Dados Relacional (CONCLUÍDO)
+
+#### 📅 31/03/2026 — Refatoração Estrutural (REFATORACAO_DB_V2.MD)
+- [x] **Modelo Relacional** — Implementação de `DiretivaTecnica`, `DiretivaItem` e `DiretivaItemAeronave`.
+- [x] **Snapshot Logic** — Criação da tabela `Snapshot` e integração formal no `csv_service.py`.
+- [x] **Migração de Dados Robusta** — ETL reescrito para deduplicação e consolidação segura de dados mestres.
+- [x] **Runtime Migration** — Aplicação migrada para consumir exclusivamente o novo modelo.
+- [x] **Remoção de Legado** — Tabelas e modelos antigos removidos/depreciados.
+- [x] **Testes de Integridade** — Suíte de testes atualizada para o novo modelo relacional.
+
