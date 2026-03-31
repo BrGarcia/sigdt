@@ -46,11 +46,11 @@ def test_directive_details_has_especialidade():
         session.add(a)
         session.flush()
         
-        dt = DiretivaTecnica(codigo=f"DT-{uid}", objetivo="OBJ-TEST")
+        dt = DiretivaTecnica(codigo_simplificado=f"DT{uid}", codigo=f"DT-{uid}", objetivo="OBJ-TEST")
         session.add(dt)
         session.flush()
 
-        item = DiretivaItem(diretiva_tecnica_id=dt.id, fadt=f"FADT-{uid}", chave_item=f"CHAVE-{uid}")
+        item = DiretivaItem(diretiva_tecnica_id=dt.codigo_simplificado, fadt=f"FADT-{uid}", chave_item=f"CHAVE-{uid}")
         session.add(item)
         session.flush()
         
@@ -77,11 +77,11 @@ def test_directive_details_edit_fields_as_admin():
         session.add(a)
         session.flush()
         
-        dt = DiretivaTecnica(codigo=f"DT-A-{uid}", objetivo="OBJ-TEST-2")
+        dt = DiretivaTecnica(codigo_simplificado=f"DTA{uid}", codigo=f"DT-A-{uid}", objetivo="OBJ-TEST-2")
         session.add(dt)
         session.flush()
 
-        item = DiretivaItem(diretiva_tecnica_id=dt.id, fadt=f"FADT-A-{uid}", chave_item=f"CHAVE-A-{uid}")
+        item = DiretivaItem(diretiva_tecnica_id=dt.codigo_simplificado, fadt=f"FADT-A-{uid}", chave_item=f"CHAVE-A-{uid}")
         session.add(item)
         session.flush()
         

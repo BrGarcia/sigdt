@@ -34,8 +34,12 @@ class Snapshot(SQLModel, table=True):
 
 class DiretivaTecnica(SQLModel, table=True):
     __tablename__ = "diretiva_tecnica"
-    id: Optional[int] = Field(default=None, primary_key=True)
-    codigo: str = Field(index=True, unique=True) # Ex: AD 2024-01
+    # Nova Chave Primária: Versão limpa (ex: BO31400224)
+    codigo_simplificado: str = Field(primary_key=True, index=True) 
+    
+    # Rótulo de exibição original (ex: BO 314-002-24)
+    codigo: str = Field(index=True, unique=True) 
+    
     objetivo: Optional[str] = Field(default=None, sa_column=Column(Text))
     classe: Optional[str] = None # M, R, O, I
     categoria: Optional[str] = None # I, U, R
@@ -53,7 +57,9 @@ class DiretivaItem(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("diretiva_tecnica_id", "chave_item"),)
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    diretiva_tecnica_id: int = Field(foreign_key="diretiva_tecnica.id")
+    # Referência à nova PK String
+    diretiva_tecnica_id: str = Field(foreign_key="diretiva_tecnica.codigo_simplificado")
+    
     fadt: Optional[str] = Field(default=None, index=True)
     tarefa: Optional[str] = None
     ordem_referencia: Optional[str] = None

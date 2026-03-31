@@ -555,14 +555,14 @@ async def list_master_directives(
         "search": search
     })
 
-@app.get("/master-directives/{id}", response_class=HTMLResponse, dependencies=[Depends(get_current_inspetor_user)])
+@app.get("/master-directives/{codigo_simplificado}", response_class=HTMLResponse, dependencies=[Depends(get_current_inspetor_user)])
 async def get_master_directive_edit(
     request: Request,
-    id: int,
+    codigo_simplificado: str,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_inspetor_user)
 ):
-    master_dt = session.get(DiretivaTecnica, id)
+    master_dt = session.get(DiretivaTecnica, codigo_simplificado)
     if not master_dt:
         raise HTTPException(status_code=404, detail="Diretiva Master not found")
     
@@ -571,10 +571,10 @@ async def get_master_directive_edit(
         "current_user": current_user
     })
 
-@app.post("/master-directives/{id}", response_class=HTMLResponse, dependencies=[Depends(get_current_inspetor_user)])
+@app.post("/master-directives/{codigo_simplificado}", response_class=HTMLResponse, dependencies=[Depends(get_current_inspetor_user)])
 async def update_master_directive(
     request: Request,
-    id: int,
+    codigo_simplificado: str,
     codigo: str = Form(...),
     objetivo: str = Form(...),
     classe: str = Form(...),
@@ -583,7 +583,7 @@ async def update_master_directive(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_inspetor_user)
 ):
-    master_dt = session.get(DiretivaTecnica, id)
+    master_dt = session.get(DiretivaTecnica, codigo_simplificado)
     if not master_dt:
         raise HTTPException(status_code=404, detail="Diretiva Master not found")
     

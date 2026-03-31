@@ -6,15 +6,21 @@ from io import StringIO
 from datetime import datetime, timezone
 from typing import Optional
 import hashlib
+import re
 
 def sanitize_formula(value):
     if isinstance(value, str) and value.startswith(('=', '+', '-', '@')):
         return "'" + value
     return value
 
-def generate_chave_item(codigo_dt: str, fadt: Optional[str], tarefa: Optional[str], ordem: Optional[str]) -> str:
-    """Gera uma chave determinística para deduplicação do item."""
-    c = str(codigo_dt or "").strip().upper()
+def sanitize_codigo(codigo: str) -> str:
+    """Remove todos os espaços e símbolos, deixando apenas letras e números."""
+    if not codigo: return ""
+    return re.sub(r'[^A-Z0-9]', '', str(codigo).upper())
+
+def generate_chave_item(codigo_simplificado: str, fadt: Optional[str], tarefa: Optional[str], ordem: Optional[str]) -> str:
+    """Gera uma chave determinística para deduplicação do item usando o código simplificado."""
+    c = str(codigo_simplificado or "").strip().upper()
     f = str(fadt or "").strip().upper()
     t = str(tarefa or "").strip().upper()
     o = str(ordem or "").strip().upper()
@@ -39,9 +45,9 @@ def process_csv(csv_content: str, filename: Optional[str] = None):
     processed_count = 0
     
     with Session(engine) as session:
-        # Cache de Aeronaves e Mestres para performance
+        # Cache de Aeronaves e Mestres para performance (usando codigo_simplificado como chave no cache)
         aero_cache = {a.matricula: a for a in session.exec(select(Aeronave)).all()}
-        dt_cache = {d.codigo: d for d in session.exec(select(DiretivaTecnica)).all()}
+        dt_cache = {d.codigo_simplificado: d for d in session.exec(select(DiretivaTecnica)).all()}
         
         # Identificar aeronaves presentes no CSV
         matriculas_no_csv = df['MATR'].dropna().unique()
@@ -52,7 +58,6 @@ def process_csv(csv_content: str, filename: Optional[str] = None):
             aero = aero_cache.get(m)
             if not aero:
                 # Se a aeronave não existe, precisamos criar agora para ter o ID para o Snapshot
-                # Mas vamos esperar o loop principal para não duplicar lógica
                 continue
             
             snap = Snapshot(
@@ -94,13 +99,16 @@ def process_csv(csv_content: str, filename: Optional[str] = None):
                 aeronave.numero_serie = sn
                 session.add(aeronave)
 
-            codigo_dt = get_val(row, 'DIRETIVA TÉCNICA')
-            if not codigo_dt: continue
+            raw_codigo_dt = get_val(row, 'DIRETIVA TÉCNICA')
+            if not raw_codigo_dt: continue
+            
+            codigo_simplificado = sanitize_codigo(raw_codigo_dt)
 
             # 2. DiretivaTecnica Upsert (Mestre)
-            dt = dt_cache.get(codigo_dt)
+            dt = dt_cache.get(codigo_simplificado)
             dt_data = {
-                "codigo": codigo_dt,
+                "codigo_simplificado": codigo_simplificado,
+                "codigo": raw_codigo_dt, # Rótulo original para exibição
                 "objetivo": get_val(row, 'OBJETIVO'),
                 "classe": get_val(row, 'CLA'),
                 "categoria": get_val(row, 'CAT'),
@@ -113,11 +121,11 @@ def process_csv(csv_content: str, filename: Optional[str] = None):
                 dt = DiretivaTecnica(**dt_data)
                 session.add(dt)
                 session.flush()
-                dt_cache[codigo_dt] = dt
+                dt_cache[codigo_simplificado] = dt
             else:
-                # Regra de Consolidação: Atualizar apenas se o dado novo for mais completo ou se for mudança real
+                # Regra de Consolidação
                 for key, value in dt_data.items():
-                    if value: # Simplificação: se tem valor no CSV, confia
+                    if value:
                         setattr(dt, key, value)
                 session.add(dt)
 
@@ -125,19 +133,19 @@ def process_csv(csv_content: str, filename: Optional[str] = None):
             fadt = get_val(row, 'FADT')
             tarefa = get_val(row, 'TAREFA')
             ordem_ref = get_val(row, 'ORDEM')
-            chave = generate_chave_item(codigo_dt, fadt, tarefa, ordem_ref)
+            chave = generate_chave_item(codigo_simplificado, fadt, tarefa, ordem_ref)
             
             # Busca item no banco
             item = session.exec(
                 select(DiretivaItem).where(
-                    DiretivaItem.diretiva_tecnica_id == dt.id,
+                    DiretivaItem.diretiva_tecnica_id == dt.codigo_simplificado,
                     DiretivaItem.chave_item == chave
                 )
             ).first()
 
             if not item:
                 item = DiretivaItem(
-                    diretiva_tecnica_id=dt.id,
+                    diretiva_tecnica_id=dt.codigo_simplificado,
                     fadt=fadt,
                     tarefa=tarefa,
                     ordem_referencia=ordem_ref,
@@ -208,4 +216,3 @@ def process_csv(csv_content: str, filename: Optional[str] = None):
         session.commit()
     
     return processed_count
-

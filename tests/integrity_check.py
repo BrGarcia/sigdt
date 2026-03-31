@@ -50,11 +50,12 @@ def test_system_integrity():
         session.add(a)
         session.flush()
         
-        dt = DiretivaTecnica(codigo=f"DT-{uid}", objetivo="TEST PDF VISIBILITY", especialidade="ELETRÔNICA")
+        # Novo Modelo: codigo_simplificado é PK
+        dt = DiretivaTecnica(codigo_simplificado=f"DT{uid}", codigo=f"DT-{uid}", objetivo="TEST PDF VISIBILITY", especialidade="ELT")
         session.add(dt)
         session.flush()
         
-        item = DiretivaItem(diretiva_tecnica_id=dt.id, fadt=f"FADT-{uid}", chave_item=f"DT-{uid}|FADT-{uid}||", descricao_item="TEST ITEM")
+        item = DiretivaItem(diretiva_tecnica_id=dt.codigo_simplificado, fadt=f"FADT-{uid}", chave_item=f"DT{uid}|FADT-{uid}||", descricao_item="TEST ITEM")
         session.add(item)
         session.flush()
         
@@ -71,20 +72,17 @@ def test_system_integrity():
 
     # 4. Testar Restrição de Especialidade (Inspetor)
     print("4. Testando restrição de especialidade (Inspetor)...")
-    # Criar inspetor de ELÉTRICA (BET = ELT, BEI = ELE, etc - use matching string for mapping)
-    # Mapping in main.py: "BMA": ["MOT", "CEL", "HID"], "BET": ["ELT"]...
-    # mapping is career -> authorized area. "ELÉTRICA" is not a career, "BEI" is.
     with Session(engine) as session:
-        # Create inspector with career 'BEI' (Electrical)
+        # Create inspector with career 'BEI' (Electrical/ELE)
         user_in = User(username=f"insp_{uid}", email=f"insp_{uid}@test.com", hashed_password="hashed", role="inspetor", especialidade="BEI")
         session.add(user_in)
-        # Directive is 'ELETRÔNICA' -> 'ELT' mapping. Career 'BEI' maps to 'ELE'. Should block.
+        # Directive is 'ELT' (Electronics). Career 'BEI' maps to 'ELE'. Should block.
         session.commit()
     
     token = security.create_access_token(data={"sub": f"insp_{uid}"})
     client.cookies.set("access_token", token)
     
-    # Tentar editar diretiva de ELETRÔNICA sendo de ELÉTRICA (Career BEI)
+    # Tentar editar diretiva de ELETRÔNICA (ELT) sendo de ELÉTRICA (Career BEI -> ELE)
     response = client.post(f"/directives/{link_id}", data={"status": "Concluída", "observacoes": "tentativa"})
     assert response.status_code == 403
     print("   [OK] Inspetor impedido de editar especialidade diferente.")
