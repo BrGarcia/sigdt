@@ -36,7 +36,19 @@
 
 ---
 
-## Versão 4.3.0 (branch: `v4.3.0-performance`)
+## Versão 4.3.1 (branch: `main`)
+
+### Status Atual: Hotfix — Correção de Deploy (Railway) (CONCLUÍDO)
+
+#### 📅 01/04/2026 — Ajustes de Inicialização e Banco
+- [x] **Auto-Migração no Startup** — Adição de `alembic upgrade head` ao `Dockerfile` para garantir o esquema no primeiro boot.
+- [x] **Fail-safe no Bootstrap** — Tratamento de exceção em `app/main.py` ao buscar o admin (evita crash se tabelas não existirem).
+- [x] **Suporte PostgreSQL Railway** — Correção dinâmica da URL `postgres://` para `postgresql://` em `app/database.py`.
+- [x] **Limpeza do Repositório** — Branches obsoletas (`v2.x`, `v3.x`, `v4.0.0-dev`) removidas e `main` definida como padrão.
+
+---
+
+## Versão 4.3.0 (branch: `main`)
 
 ### Status Atual: Fase 3 — Performance e Validação (CONCLUÍDO)
 
