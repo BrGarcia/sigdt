@@ -8,6 +8,11 @@
     <link rel="icon" type="image/png" href="/static/img/favicon.png">
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        htmx.on('htmx:configRequest', function (evt) {
+            evt.detail.headers['x-csrftoken'] = '{{ csrf_token() }}';
+        });
+    </script>
 </head>
 
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
@@ -152,7 +157,7 @@
                 </button>
             </div>
             <div class="flex-grow w-full relative">
-                <iframe src="/static/uploads/{{ diretiva.pdf_path }}" class="absolute inset-0 w-full h-full border-0"></iframe>
+                <iframe src="/uploads/{{ diretiva.pdf_path }}" class="absolute inset-0 w-full h-full border-0"></iframe>
             </div>
         </div>
     </div>
@@ -178,7 +183,12 @@
 
         document.getElementById('logout-button').addEventListener('click', async function() {
             try {
-                const response = await fetch('/users/logout', { method: 'POST' });
+                const response = await fetch('/users/logout', { 
+                    method: 'POST',
+                    headers: {
+                        'x-csrftoken': '{{ csrf_token() }}'
+                    }
+                });
                 if (response.ok) {
                     window.location.href = '/login';
                 }

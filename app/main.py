@@ -26,10 +26,36 @@ from app.users import schemas as user_schemas
 from app.users.routes import get_current_user, get_current_admin_user, get_optional_current_user, get_current_inspetor_user
 from app.users.models import User
 
+from starlette_csrf import CSRFMiddleware
+
+# Gatekeeper Password
+GATEKEEPER_PASSWORD = os.getenv("GATEKEEPER_PASSWORD")
+if not GATEKEEPER_PASSWORD:
+    raise ValueError("Variável de ambiente GATEKEEPER_PASSWORD é obrigatória.")
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("Variável de ambiente SECRET_KEY é obrigatória para segurança.")
+
 app = FastAPI(title="SIGDT - Sistema de Gestão de Diretivas Técnicas")
+
+# CSRF Protection
+app.add_middleware(CSRFMiddleware, secret=SECRET_KEY)
 
 # Templates
 templates = Jinja2Templates(directory="app/templates")
+
+from jinja2 import pass_context
+
+# Add CSRF token to all templates
+@pass_context
+def get_csrf_token(context):
+    request = context.get("request")
+    if request:
+        return request.scope.get("csrf_token") or ""
+    return ""
+
+templates.env.globals["csrf_token"] = get_csrf_token
 
 def format_especialidade(esp_string: str):
     if not esp_string:
@@ -87,11 +113,6 @@ def has_specialty_permission(user: User, directive_specs_string: str) -> bool:
 
 templates.env.filters['format_especialidade'] = format_especialidade
 
-# Gatekeeper Password
-GATEKEEPER_PASSWORD = os.getenv("GATEKEEPER_PASSWORD")
-if not GATEKEEPER_PASSWORD:
-    raise ValueError("Variável de ambiente GATEKEEPER_PASSWORD é obrigatória.")
-
 # Simple In-Memory Rate Limiter (No external DB needed)
 from collections import defaultdict
 import time
@@ -106,8 +127,6 @@ def is_rate_limited(key: str, max_attempts: int = 5, window: int = 60):
     login_attempts[key].append(now)
     return False
 
-SECRET_KEY = os.getenv("SECRET_KEY", "default_secret_key_change_in_production")
-
 def check_gatekeeper(request: Request):
     token = request.cookies.get("gatekeeper_access")
     if not token:
@@ -118,9 +137,22 @@ def check_gatekeeper(request: Request):
     except Exception:
         return False
 
+from fastapi.responses import FileResponse
+
+@app.get("/uploads/{filename}")
+async def get_upload(request: Request, filename: str):
+    if not check_gatekeeper(request):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    file_path = os.path.join("app/uploads", filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+    
+    return FileResponse(file_path)
+
 @app.on_event("startup")
 def on_startup():
-    os.makedirs("app/static", exist_ok=True)
+    os.makedirs("app/uploads", exist_ok=True)
     init_db()
     with Session(engine) as session:
         admin_user = user_actions.get_user(session, "admin")
@@ -130,13 +162,6 @@ def on_startup():
         if not admin_user:
             user_in = user_schemas.UserCreate(username="admin", email="admin@example.com", password=admin_pwd)
             admin_user = user_actions.create_user(session, user_in, role="admin")
-        else:
-            # Update admin password if ENV is different from current hash (always updates to match ENV for safety)
-            from app.users import security as user_security
-            admin_user.hashed_password = user_security.get_password_hash(admin_pwd)
-            admin_user.role = "admin"
-            session.add(admin_user)
-            session.commit()
 
 
 # Static files and user routes
@@ -344,7 +369,7 @@ async def update_directive_details(
         if not content.startswith(b'%PDF-'):
             raise HTTPException(status_code=400, detail="Arquivo inválido. Apenas arquivos PDF reais são permitidos.")
         
-        upload_dir = "app/static/uploads"
+        upload_dir = "app/uploads"
         os.makedirs(upload_dir, exist_ok=True)
         
         # Item 9: Forçar extensão .pdf independentemente do nome original
@@ -409,7 +434,7 @@ async def delete_attachment(
         raise HTTPException(status_code=403, detail="Você não tem permissão para alterar diretivas desta especialidade.")
 
     if link.pdf_path:
-        file_path = os.path.join("app/static/uploads", link.pdf_path)
+        file_path = os.path.join("app/uploads", link.pdf_path)
         if os.path.exists(file_path):
             try:
                 os.remove(file_path)

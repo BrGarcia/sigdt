@@ -10,7 +10,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         htmx.on('htmx:configRequest', function (evt) {
-            // HTMX will automatically include cookies
+            evt.detail.headers['x-csrftoken'] = '{{ csrf_token() }}';
         });
     </script>
 </head>
@@ -71,6 +71,7 @@
                 <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
                     <h3 class="text-lg font-semibold mb-4 text-gray-800">Upload CSV</h3>
                     <form action="/upload" method="post" enctype="multipart/form-data" class="space-y-4">
+                        <input type="hidden" name="csrftoken" value="{{ csrf_token() }}">
                         <div class="flex items-center justify-center w-full">
                             <label
                                 class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
@@ -130,7 +131,12 @@
         // Logout logic
         document.getElementById('logout-button').addEventListener('click', async function () {
             try {
-                const response = await fetch('/users/logout', { method: 'POST' });
+                const response = await fetch('/users/logout', { 
+                    method: 'POST',
+                    headers: {
+                        'x-csrftoken': '{{ csrf_token() }}'
+                    }
+                });
                 if (response.ok) {
                     window.location.href = '/login';
                 }

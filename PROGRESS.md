@@ -36,6 +36,19 @@
 
 ---
 
+## Versão 4.1.0 (branch: `v4.1.0-security`)
+
+### Status Atual: Fase 1 — Estabilização e Segurança Crítica (CONCLUÍDO)
+
+#### 📅 01/04/2026 — Sanitização e Proteção (RELATORIO_FINAL.MD Fase 1)
+- [x] **Sanitização de Segredos** — Remoção de fallbacks de `SECRET_KEY`, rotação de senhas e limpeza de docs.
+- [x] **Proteção Anti-CSRF** — Implementação de `CSRFMiddleware` global e integração em todos os formulários/HTMX.
+- [x] **Bootstrap Idempotente** — Criação do usuário `admin` não reseta mais a senha a cada boot.
+- [x] **Proteção de Anexos** — Uploads movidos para `app/uploads` e servidos via rota autenticada.
+- [x] **Depuração de Histórico** — `.env` removido do rastreamento (recomenda-se purge de histórico se exposto publicamente).
+
+---
+
 ## Versão 4.0.0-dev (branch: `v4.0.0-dev`)
 
 ### Status Atual: Refatoração de Banco de Dados Relacional (CONCLUÍDO)

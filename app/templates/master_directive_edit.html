@@ -28,6 +28,7 @@
             <p class="text-sm text-amber-600 mb-8 font-medium italic">⚠️ Atenção: Alterações nesta tela serão refletidas em TODAS as aeronaves vinculadas aos itens desta diretiva técnica.</p>
 
             <form action="/master-directives/{{ directive.codigo_simplificado }}" method="post" class="space-y-6">
+                <input type="hidden" name="csrftoken" value="{{ csrf_token() }}">
                 <div>
                     <label for="codigo" class="block text-sm font-medium text-gray-700">Código da Diretiva</label>
                     <input type="text" name="codigo" id="codigo" value="{{ directive.codigo }}" required 
@@ -86,7 +87,12 @@
     <script>
         document.getElementById('logout-button').addEventListener('click', async function() {
             try {
-                const response = await fetch('/users/logout', { method: 'POST' });
+                const response = await fetch('/users/logout', { 
+                    method: 'POST',
+                    headers: {
+                        'x-csrftoken': '{{ csrf_token() }}'
+                    }
+                });
                 if (response.ok) {
                     window.location.href = '/login';
                 }

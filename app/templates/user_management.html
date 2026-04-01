@@ -82,9 +82,18 @@
     </main>
 
     <script>
+        htmx.on('htmx:configRequest', function (evt) {
+            evt.detail.headers['x-csrftoken'] = '{{ csrf_token() }}';
+        });
+
         document.getElementById('logout-button').addEventListener('click', async function() {
             try {
-                const response = await fetch('/users/logout', { method: 'POST' });
+                const response = await fetch('/users/logout', { 
+                    method: 'POST',
+                    headers: {
+                        'x-csrftoken': '{{ csrf_token() }}'
+                    }
+                });
                 if (response.ok) {
                     window.location.href = '/login';
                 }
@@ -92,10 +101,6 @@
                 console.error('Logout failed', error);
                 window.location.href = '/login';
             }
-        });
-
-        htmx.on('htmx:configRequest', function (evt) {
-            // HTMX will automatically include cookies
         });
     </script>
 </body>

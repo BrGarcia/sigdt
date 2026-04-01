@@ -81,7 +81,12 @@
     <script>
         document.getElementById('logout-button').addEventListener('click', async function() {
             try {
-                const response = await fetch('/users/logout', { method: 'POST' });
+                const response = await fetch('/users/logout', { 
+                    method: 'POST',
+                    headers: {
+                        'x-csrftoken': '{{ csrf_token() }}'
+                    }
+                });
                 if (response.ok) {
                     window.location.href = '/login';
                 }

@@ -12,8 +12,8 @@ Siga estes passos para colocar o sistema online:
     *   Clique no serviço `web` (seu app) -> Aba `Variables`.
     *   Adicione as seguintes variáveis:
         *   `SECRET_KEY`: (Crie uma frase longa aleatória)
-        *   `ADMIN_PASSWORD`: `5Hr9Mk>06=L%`
-        *   `GATEKEEPER_PASSWORD`: `@J6!~@s6q67eN~k/`
+        *   `ADMIN_PASSWORD`: (Crie uma senha forte para o admin)
+        *   `GATEKEEPER_PASSWORD`: (Crie uma senha forte para o gatekeeper)
     *   *Nota: O Railway já conecta o DATABASE_URL do banco de dados ao seu app se estiverem no mesmo projeto.*
 6.  **Deploy:** O Railway iniciará o build automaticamente. Assim que terminar, ele gerará uma URL (ex: `sigdt-production.up.railway.app`).
 
