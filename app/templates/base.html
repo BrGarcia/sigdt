@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}SIGDT - Sistema de Gestão de Diretivas Técnicas{% endblock %}</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png">
+    <link rel="stylesheet" href="/static/css/tailwind.min.css">
     <script src="/static/js/htmx.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <script>
         htmx.on('htmx:configRequest', function (evt) {
             evt.detail.headers['x-csrftoken'] = '{{ csrf_token() }}';

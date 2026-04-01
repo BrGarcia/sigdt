@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from sqlmodel import SQLModel
 from app.database import DATABASE_URL
-from app.models import Aeronave, DiretivaTecnica, DiretivaItem, DiretivaItemAeronave
+from app.models import Aeronave, DiretivaTecnica, DiretivaItem, DiretivaItemAeronave, Snapshot
 from app.users.models import User
 
 target_metadata = SQLModel.metadata

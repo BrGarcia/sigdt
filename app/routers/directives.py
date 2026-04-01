@@ -270,12 +270,20 @@ async def delete_attachment(
     })
 
 @router.get("/uploads/{filename}")
-async def get_upload(request: Request, filename: str):
+async def get_upload(
+    request: Request, 
+    filename: str, 
+    current_user: Optional[User] = Depends(get_optional_current_user)
+):
     if not check_gatekeeper(request):
-        raise HTTPException(status_code=403, detail="Acesso negado")
-    
+        raise HTTPException(status_code=403, detail="Acesso negado (Gatekeeper)")
+
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Autenticação exigida para visualizar anexos")
+
     file_path = os.path.join("app/uploads", filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Arquivo não encontrado")
-    
+
     return FileResponse(file_path)
+

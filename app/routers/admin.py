@@ -39,7 +39,7 @@ async def upload_csv(
             raise
         except Exception:
             raise HTTPException(status_code=400, detail=f"Não foi possível ler o arquivo '{file.filename}'. Verifique o formato CSV.")
-        process_csv(content.decode('utf-8'), filename=file.filename)
+        process_csv(content.decode('utf-8'), filename=file.filename, session=session)
     return RedirectResponse(url="/", status_code=303)
 
 @router.post("/update-tendencia/{diretiva_id}", dependencies=[Depends(get_current_admin_user)])
