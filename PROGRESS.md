@@ -36,6 +36,19 @@
 
 ---
 
+## Versão 4.3.0 (branch: `v4.3.0-performance`)
+
+### Status Atual: Fase 3 — Performance e Validação (CONCLUÍDO)
+
+#### 📅 01/04/2026 — Otimização e Eager Loading (RELATORIO_FINAL.MD Fase 3)
+- [x] **Eliminação de N+1 no CSV** — Implementação de Lookups em memória (`item_cache`, `link_cache`) no `csv_service.py`.
+- [x] **Eager Loading no Dashboard** — Utilização de `selectinload` para carregar Aeronaves e Diretivas em uma única query.
+- [x] **Redução de I/O de Banco** — Remoção de `session.exec` dentro do loop principal de importação.
+- [x] **Validação de Performance** — Criação de `tests/test_performance.py` validando importação de 1000+ linhas em sub-segundos.
+- [x] **Suíte de Testes Integrada** — Todos os 14 testes (incluindo performance) passando com sucesso.
+
+---
+
 ## Versão 4.2.0 (branch: `v4.2.0-refactor`)
 
 ### Status Atual: Fase 2 — Integridade Arquitetural e Refatoração (CONCLUÍDO)

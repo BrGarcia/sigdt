@@ -61,6 +61,8 @@ def has_specialty_permission(user: User, directive_specs_string: str) -> bool:
         
     return any(spec in allowed_areas for spec in directive_specs)
 
+from sqlalchemy.orm import selectinload
+
 @router.get("/", response_class=HTMLResponse)
 async def read_root(
     request: Request, 
@@ -77,7 +79,17 @@ async def read_root(
     total_count = session.exec(select(func.count(DiretivaItemAeronave.id))).one()
     total_pages = max(1, (total_count + per_page - 1) // per_page)
 
-    statement = select(DiretivaItemAeronave).order_by(desc(DiretivaItemAeronave.gut)).offset(offset).limit(per_page)
+    # OTIMIZAÇÃO FASE 3: Eager Loading dos relacionamentos para evitar N+1
+    statement = (
+        select(DiretivaItemAeronave)
+        .options(
+            selectinload(DiretivaItemAeronave.aeronave),
+            selectinload(DiretivaItemAeronave.diretiva_item).selectinload(DiretivaItem.diretiva_tecnica)
+        )
+        .order_by(desc(DiretivaItemAeronave.gut))
+        .offset(offset)
+        .limit(per_page)
+    )
     diretiva_links = session.exec(statement).all()
     
     return templates.TemplateResponse(request=request, name="index.html", context={
@@ -101,7 +113,18 @@ async def list_directives(
     per_page = 50
     offset = (page - 1) * per_page
     
-    statement = select(DiretivaItemAeronave).join(DiretivaItem).join(DiretivaTecnica).join(Aeronave).order_by(desc(DiretivaItemAeronave.gut))
+    # OTIMIZAÇÃO FASE 3: Eager Loading dos relacionamentos para evitar N+1
+    statement = (
+        select(DiretivaItemAeronave)
+        .join(DiretivaItem)
+        .join(DiretivaTecnica)
+        .join(Aeronave)
+        .options(
+            selectinload(DiretivaItemAeronave.aeronave),
+            selectinload(DiretivaItemAeronave.diretiva_item).selectinload(DiretivaItem.diretiva_tecnica)
+        )
+        .order_by(desc(DiretivaItemAeronave.gut))
+    )
     statement = apply_filters(statement, search, status, especialidade)
     
     count_statement = select(func.count()).select_from(statement.subquery())

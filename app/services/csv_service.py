@@ -49,6 +49,19 @@ def process_csv(csv_content: str, filename: Optional[str] = None):
         aero_cache = {a.matricula: a for a in session.exec(select(Aeronave)).all()}
         dt_cache = {d.codigo_simplificado: d for d in session.exec(select(DiretivaTecnica)).all()}
         
+        # OTIMIZAÇÃO FASE 3: Pré-carregar Itens e Links para evitar N+1 queries no loop
+        # Cache de Itens: (codigo_simplificado, chave_item) -> Item
+        item_cache = {
+            (i.diretiva_tecnica_id, i.chave_item): i 
+            for i in session.exec(select(DiretivaItem)).all()
+        }
+        
+        # Cache de Links: (aeronave_id, item_id) -> Link
+        link_cache = {
+            (l.aeronave_id, l.diretiva_item_id): l 
+            for l in session.exec(select(DiretivaItemAeronave)).all()
+        }
+        
         # Identificar aeronaves presentes no CSV
         matriculas_no_csv = df['MATR'].dropna().unique()
         
@@ -135,13 +148,8 @@ def process_csv(csv_content: str, filename: Optional[str] = None):
             ordem_ref = get_val(row, 'ORDEM')
             chave = generate_chave_item(codigo_simplificado, fadt, tarefa, ordem_ref)
             
-            # Busca item no banco
-            item = session.exec(
-                select(DiretivaItem).where(
-                    DiretivaItem.diretiva_tecnica_id == dt.codigo_simplificado,
-                    DiretivaItem.chave_item == chave
-                )
-            ).first()
+            # OTIMIZAÇÃO FASE 3: Busca no cache em vez de query individual
+            item = item_cache.get((codigo_simplificado, chave))
 
             if not item:
                 item = DiretivaItem(
@@ -154,14 +162,12 @@ def process_csv(csv_content: str, filename: Optional[str] = None):
                 )
                 session.add(item)
                 session.flush()
+                # Atualiza cache de itens
+                item_cache[(codigo_simplificado, chave)] = item
 
             # 4. DiretivaItemAeronave Upsert (Estado Operacional)
-            link = session.exec(
-                select(DiretivaItemAeronave).where(
-                    DiretivaItemAeronave.aeronave_id == aeronave.id,
-                    DiretivaItemAeronave.diretiva_item_id == item.id
-                )
-            ).first()
+            # OTIMIZAÇÃO FASE 3: Busca no cache em vez de query individual
+            link = link_cache.get((aeronave.id, item.id))
 
             status_csv = get_val(row, 'STATUS') or "Pendente"
             snap = aero_snapshots.get(aeronave.id)
@@ -178,6 +184,10 @@ def process_csv(csv_content: str, filename: Optional[str] = None):
                     ultima_referencia_snapshot=now_utc.isoformat()
                 )
                 link.tendencia = 3
+                session.add(link)
+                session.flush()
+                # Atualiza cache de links
+                link_cache[(aeronave.id, item.id)] = link
             else:
                 link.status = status_csv
                 link.snapshot_id = snap.id if snap else None
@@ -186,9 +196,8 @@ def process_csv(csv_content: str, filename: Optional[str] = None):
                 link.ultima_referencia_snapshot = now_utc.isoformat()
                 link.origem_status = "csv"
                 link.concluida_automaticamente = False
+                session.add(link)
             
-            session.add(link)
-            session.flush()
             link.calculate_gut()
             links_processados_ids.append(link.id)
             processed_count += 1
