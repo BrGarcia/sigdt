@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 import pytest
-from app.main import app, SECRET_KEY
+from app.main import app
+from app.core.config import SECRET_KEY
 from app.database import init_db
 import os
 from jose import jwt

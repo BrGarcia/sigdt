@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 import pytest
-from app.main import app, SECRET_KEY
+from app.main import app
+from app.core.config import SECRET_KEY
 from jose import jwt
 import time
 import os
@@ -13,19 +14,27 @@ client = TestClient(app)
 def get_gatekeeper_token():
     return jwt.encode({"access": "granted", "exp": time.time() + 3600}, SECRET_KEY, algorithm="HS256")
 
+def get_csrf_token():
+    client.get("/gatekeeper")
+    token = client.cookies.get("csrftoken")
+    return token or ""
+
 def test_gatekeeper_unauthorized_redirect():
+    client.cookies.clear()
     response = client.get("/", follow_redirects=False)
     assert response.status_code == 307
     assert "/gatekeeper" in response.headers["location"]
 
 def test_gatekeeper_invalid_password():
-    response = client.post("/gatekeeper", data={"password": "wrong_password"}, follow_redirects=False)
+    csrf_token = get_csrf_token()
+    response = client.post("/gatekeeper", data={"password": "wrong_password"}, headers={"x-csrftoken": csrf_token}, follow_redirects=False)
     assert response.status_code == 303
     assert "/gatekeeper?error=1" in response.headers["location"]
 
 def test_gatekeeper_valid_password():
+    csrf_token = get_csrf_token()
     password = os.getenv("GATEKEEPER_PASSWORD")
-    response = client.post("/gatekeeper", data={"password": password}, follow_redirects=False)
+    response = client.post("/gatekeeper", data={"password": password}, headers={"x-csrftoken": csrf_token}, follow_redirects=False)
     assert response.status_code == 303
     assert "gatekeeper_access" in response.cookies
     
@@ -63,9 +72,11 @@ def test_status_diretiva_enum():
 def test_rate_limiting_gatekeeper():
     # 6 attempts to trigger rate limit
     for _ in range(5):
-        client.post("/gatekeeper", data={"password": "wrong"})
+        csrf_token = get_csrf_token()
+        client.post("/gatekeeper", data={"password": "wrong"}, headers={"x-csrftoken": csrf_token})
     
-    response = client.post("/gatekeeper", data={"password": "wrong"})
+    csrf_token = get_csrf_token()
+    response = client.post("/gatekeeper", data={"password": "wrong"}, headers={"x-csrftoken": csrf_token})
     assert response.status_code == 429
     assert "Muitas tentativas" in response.json()["detail"]
 
