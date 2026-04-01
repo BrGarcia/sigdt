@@ -17,6 +17,7 @@ Conclusão geral:
 
 - Fase 1: implementada em grande parte, com um item não comprovável e um item apenas parcialmente verificável.
 - Fase 2: implementada apenas parcialmente.
+- Fase 3: implementada apenas parcialmente.
 - Principal pendência real encontrada: divergência entre os modelos atuais e as migrations do Alembic.
 
 ## FASE 1: Estabilização e Segurança Crítica
@@ -186,6 +187,77 @@ Conclusão:
 - Reconciliação completa das migrations com o schema V4 atual.
 - Internalização completa do frontend, pois Tailwind ainda vem de CDN.
 
+## FASE 3: Performance e Validação
+
+### 1. Otimização do CSV Service
+
+Status: PARCIAL
+
+Evidências encontradas:
+
+- `app/services/csv_service.py` carrega caches prévios de:
+  - `Aeronave`
+  - `DiretivaTecnica`
+  - `DiretivaItem`
+  - `DiretivaItemAeronave`
+- O loop principal usa esses caches para evitar consultas individuais por linha.
+- Há comentários explícitos no código marcando a otimização da Fase 3.
+
+Ponto pendente:
+
+- O CSV ainda é carregado integralmente em memória com `pd.read_csv(StringIO(csv_content), ...)`.
+- Não há processamento em chunks/lotes.
+
+Conclusão:
+
+- Redução de N+1: SIM
+- Processamento em chunks para reduzir memória: NÃO
+
+### 2. Eager Loading no Dashboard
+
+Status: IMPLEMENTADO
+
+Evidências encontradas:
+
+- `app/routers/directives.py` usa `selectinload` em `read_root`.
+- `app/routers/directives.py` usa `selectinload` também em `list_directives`.
+- Os relacionamentos carregados incluem:
+  - `DiretivaItemAeronave.aeronave`
+  - `DiretivaItemAeronave.diretiva_item`
+  - `DiretivaItem.diretiva_tecnica`
+
+Conclusão:
+
+- Mitigação do N+1 no dashboard/listagem: SIM
+
+### 3. Suíte de testes robusta
+
+Status: PARCIAL
+
+Evidências encontradas:
+
+- Existem testes para segurança, integridade funcional, recursos novos e performance:
+  - `tests/test_v35_security.py`
+  - `tests/integrity_check.py`
+  - `tests/test_new_features.py`
+  - `tests/test_performance.py`
+- Há teste explícito de performance para importação de CSV com 1000 linhas.
+- O serviço de CSV possui lógica de snapshot e deduplicação operacional no código.
+
+Pontos pendentes:
+
+- Os testes usam `init_db()` e `Session(engine)` sobre o banco compartilhado, sem isolamento efêmero por teste.
+- Não encontrei fixture de banco temporário/transacional por caso de teste.
+- Não encontrei teste explícito e focado validando:
+  - deduplicação de importação CSV
+  - auto-conclusão via snapshot como cenário de regressão isolado
+
+Conclusão:
+
+- Cobertura melhorada: SIM
+- Isolamento de banco por teste: NÃO
+- Testes de integração robustos para snapshot/deduplicação: NÃO CONFIRMADO
+
 ## Risco Principal Remanescente
 
 A maior inconsistência objetiva encontrada é a divergência entre os models atuais e as migrations do Alembic. Isso significa que o projeto pode funcionar em um banco já ajustado localmente, mas ainda assim falhar ou divergir em ambientes recriados exclusivamente a partir da cadeia de migrations.
@@ -195,3 +267,5 @@ A maior inconsistência objetiva encontrada é a divergência entre os models at
 As implementações da Fase 1 foram, em sua maior parte, realizadas no código atual.
 
 As implementações da Fase 2 foram realizadas apenas parcialmente: houve avanço claro na modularização e no frontend base, mas a reconciliação do banco de dados não foi concluída e a internalização de dependências frontend ainda está incompleta.
+
+As implementações da Fase 3 também foram realizadas apenas parcialmente: houve melhora real na performance por cache e eager loading, porém o processamento em chunks não foi implementado e a estratégia de testes ainda não atingiu o nível de isolamento e cobertura descrito no relatório final.
