@@ -7,11 +7,12 @@
     <!-- Create User Form -->
     <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
         <h3 class="text-lg font-semibold mb-4 text-gray-800">Criar Novo Usuário</h3>
-        <form hx-post="/users/" hx-target="#user-list" hx-swap="beforeend" hx-on::after-request="if(event.detail.successful) this.reset()" class="space-y-4">
+        <div id="user-form-message" class="hidden mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"></div>
+        <form id="create-user-form" hx-post="/users/" hx-target="#user-list" hx-swap="beforeend" hx-on::after-request="if(event.detail.successful) this.reset()" class="space-y-4">
             <input type="hidden" name="csrftoken" value="{{ csrf_token() }}">
             <div>
                 <label for="username" class="block text-sm font-medium text-gray-700">Usuário</label>
-                <input type="text" name="username" id="username" required class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                <input type="text" name="username" id="username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" title="Use de 3 a 20 caracteres com letras, números ou underscore." class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
             </div>
             <div>
                 <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
@@ -19,7 +20,7 @@
             </div>
             <div>
                 <label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
-                <input type="password" name="password" id="password" required class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                <input type="password" name="password" id="password" required minlength="8" autocomplete="new-password" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
             </div>
             <div>
                 <label for="role" class="block text-sm font-medium text-gray-700">Role</label>
@@ -59,4 +60,44 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const createUserForm = document.getElementById('create-user-form');
+    const userFormMessage = document.getElementById('user-form-message');
+
+    if (createUserForm && userFormMessage) {
+        createUserForm.addEventListener('htmx:beforeRequest', function () {
+            userFormMessage.textContent = '';
+            userFormMessage.classList.add('hidden');
+        });
+
+        createUserForm.addEventListener('htmx:afterRequest', function (event) {
+            if (event.detail.successful) {
+                userFormMessage.textContent = '';
+                userFormMessage.classList.add('hidden');
+            }
+        });
+
+        createUserForm.addEventListener('htmx:responseError', function (event) {
+            let message = 'Nao foi possivel criar o usuario.';
+            const xhr = event.detail.xhr;
+
+            if (xhr && xhr.responseText) {
+                try {
+                    const payload = JSON.parse(xhr.responseText);
+                    if (payload.detail) {
+                        message = payload.detail;
+                    }
+                } catch (error) {
+                    message = xhr.responseText;
+                }
+            }
+
+            userFormMessage.textContent = message;
+            userFormMessage.classList.remove('hidden');
+        });
+    }
+</script>
 {% endblock %}

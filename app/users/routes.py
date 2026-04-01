@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Form, Cookie, Response, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 from app.database import get_session
 from . import actions, schemas, security, models
@@ -71,6 +73,25 @@ def get_current_inspetor_user(current_user: models.User = Depends(get_current_us
         )
     return current_user
 
+def _format_user_validation_error(exc: ValidationError) -> str:
+    first_error = exc.errors()[0]
+    field = first_error["loc"][-1]
+    error_type = first_error["type"]
+
+    if field == "username":
+        if error_type == "string_too_short":
+            return "Usuário deve ter ao menos 3 caracteres."
+        if error_type == "string_too_long":
+            return "Usuário deve ter no máximo 20 caracteres."
+        if error_type == "string_pattern_mismatch":
+            return "Usuário deve conter apenas letras, números e underscore."
+    if field == "password" and error_type == "string_too_short":
+        return "Senha deve ter ao menos 8 caracteres."
+    if field == "email":
+        return "Email inválido."
+
+    return "Dados inválidos para criação do usuário."
+
 @router.post("/token")
 async def login_for_access_token(request: Request, response: Response, db: Session = Depends(get_session), form_data: OAuth2PasswordRequestForm = Depends()):
     from app.core.config import is_rate_limited, ENVIRONMENT
@@ -117,9 +138,21 @@ def create_user(
     db_user = actions.get_user(db, username=username)
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
-    
-    user_in = schemas.UserCreate(username=username, email=email, password=password, role=role, especialidade=especialidade)
-    new_user = actions.create_user(db=db, user=user_in, role=role)
+
+    db_email = actions.get_user_by_email(db, email=email)
+    if db_email:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    try:
+        user_in = schemas.UserCreate(username=username, email=email, password=password, role=role, especialidade=especialidade)
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail=_format_user_validation_error(exc))
+
+    try:
+        new_user = actions.create_user(db=db, user=user_in, role=role)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Username or email already registered")
     
     # Return HTML fragment for HTMX to append to the list
     from app.core.templates import templates

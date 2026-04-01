@@ -85,3 +85,86 @@ def test_directive_details_edit_fields_as_admin(authorized_client, session: Sess
 
     response = authorized_client.get(f"/directives/{link_id}")
     assert response.status_code == 200
+
+def test_create_user_persists_and_returns_fragment(authorized_client, session: Session):
+    uid = str(uuid.uuid4())[:8]
+    admin_username = f"adm_{uid}"
+    admin = User(
+        username=admin_username,
+        email=f"{admin_username}@example.com",
+        hashed_password="hashed",
+        role="admin"
+    )
+    session.add(admin)
+    session.commit()
+
+    token = security.create_access_token(data={"sub": admin_username})
+    authorized_client.cookies.set("access_token", token)
+
+    page_response = authorized_client.get("/users/manage")
+    assert page_response.status_code == 200
+
+    csrf_token = authorized_client.cookies.get("csrftoken")
+    assert csrf_token
+
+    username = f"user_{uid}"
+    response = authorized_client.post(
+        "/users/",
+        data={
+            "username": username,
+            "email": f"{username}@example.com",
+            "password": "Password123",
+            "role": "inspetor",
+            "especialidade": "BMA",
+        },
+        headers={
+            "x-csrftoken": csrf_token,
+            "HX-Request": "true",
+        },
+    )
+
+    assert response.status_code == 200
+    assert username in response.text
+
+    created_user = session.exec(select(User).where(User.username == username)).first()
+    assert created_user is not None
+    assert created_user.email == f"{username}@example.com"
+
+def test_create_user_invalid_password_returns_422_not_500(authorized_client, session: Session):
+    uid = str(uuid.uuid4())[:8]
+    admin_username = f"adm_{uid}"
+    admin = User(
+        username=admin_username,
+        email=f"{admin_username}@example.com",
+        hashed_password="hashed",
+        role="admin"
+    )
+    session.add(admin)
+    session.commit()
+
+    token = security.create_access_token(data={"sub": admin_username})
+    authorized_client.cookies.set("access_token", token)
+
+    page_response = authorized_client.get("/users/manage")
+    assert page_response.status_code == 200
+
+    csrf_token = authorized_client.cookies.get("csrftoken")
+    assert csrf_token
+
+    response = authorized_client.post(
+        "/users/",
+        data={
+            "username": f"user_{uid}",
+            "email": f"user_{uid}@example.com",
+            "password": "123456",
+            "role": "inspetor",
+            "especialidade": "BMA",
+        },
+        headers={
+            "x-csrftoken": csrf_token,
+            "HX-Request": "true",
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Senha deve ter ao menos 8 caracteres."
