@@ -18,6 +18,6 @@ COPY . .
 ENV PORT=8080
 EXPOSE 8080
 
-# Usamos sh -c para garantir que a expansão da variável de ambiente ocorra corretamente
+# Usamos sh -c para garantir que as migrações rodem antes do app
 # Adicionamos --proxy-headers e --forwarded-allow-ips para lidar com o proxy do Railway
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --proxy-headers --forwarded-allow-ips='*'"]
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --proxy-headers --forwarded-allow-ips='*'"]

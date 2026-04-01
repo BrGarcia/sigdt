@@ -29,22 +29,23 @@ app.include_router(user_routes.router)
 
 @app.on_event("startup")
 def on_startup():
-    # Nota: Em produção, as migrações devem ser rodadas via Alembic CLI.
-    # SQLModel.metadata.create_all(engine) removido conforme RELATORIO_FINAL.MD Fase 2.
-    
     # Criar diretório de uploads se não existir
     os.makedirs("app/uploads", exist_ok=True)
     
-    # Bootstrap Admin User
-    with Session(engine) as session:
-        admin_user = user_actions.get_user(session, "admin")
-        if not admin_user:
-            user_in = user_schemas.UserCreate(
-                username="admin", 
-                email="admin@example.com", 
-                password=ADMIN_PASSWORD
-            )
-            user_actions.create_user(session, user_in, role="admin")
+    # Bootstrap Admin User (with fail-safe)
+    try:
+        with Session(engine) as session:
+            admin_user = user_actions.get_user(session, "admin")
+            if not admin_user:
+                user_in = user_schemas.UserCreate(
+                    username="admin", 
+                    email="admin@example.com", 
+                    password=ADMIN_PASSWORD
+                )
+                user_actions.create_user(session, user_in, role="admin")
+    except Exception as e:
+        print(f"Aviso: Não foi possível realizar o bootstrap do admin (tabelas podem não existir ainda): {e}")
+
 
 @app.get("/health")
 async def health_check():

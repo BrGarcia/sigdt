@@ -8,6 +8,10 @@ import app.users.models
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sigdt.db")
 
+# Fix for Railway/Heroku postgres URLs
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 engine = create_engine(DATABASE_URL, echo=True if "sqlite" in DATABASE_URL else False)
 
 def get_session():
