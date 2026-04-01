@@ -1,180 +1,118 @@
-<!DOCTYPE html>
-<html lang="pt-br">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIGDT - Sistema de Gestão de Diretivas Técnicas</title>
-    <link rel="icon" type="image/png" href="/static/img/favicon.png">
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        htmx.on('htmx:configRequest', function (evt) {
-            evt.detail.headers['x-csrftoken'] = '{{ csrf_token() }}';
-        });
-    </script>
-</head>
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Sidebar: Search & Upload -->
+    <div class="lg:col-span-1 space-y-6">
+        <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <h3 class="text-lg font-semibold mb-4 text-gray-800">Filtros e Busca</h3>
+            <form id="filter-form" hx-get="/directives" hx-target="#directives-table"
+                hx-trigger="change, keyup delay:500ms">
+                <div class="space-y-4">
+                    <input type="text" name="search" placeholder="Buscar por SN, Matrícula ou DT..."
+                        class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
 
-<body class="bg-gray-100 font-sans leading-normal tracking-normal">
-    <nav class="bg-blue-900 p-4 shadow-lg text-white">
-        <div class="container mx-auto flex justify-between items-center">
-            <a href="/" class="text-2xl font-bold tracking-tight hover:text-blue-300 transition-colors">SIGDT</a>
-            <div class="space-x-6 flex items-center">
-                <a href="/" class="text-sm font-medium hover:text-blue-300 transition-colors">Dashboard</a>
-                {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspetor') %}
-                <a href="/master-directives"
-                    class="text-sm font-medium hover:text-blue-300 transition-colors">Diretivas</a>
-                {% endif %}
-                {% if current_user %}
-                {% if current_user.role == 'admin' %}
-                <a href="/users/manage" class="text-sm font-medium hover:text-blue-300 transition-colors">Usuários</a>
-                {% endif %}
-                <button id="logout-button"
-                    class="text-sm font-medium hover:text-red-300 transition-colors">Logout</button>
-                {% else %}
-                <a href="/login" class="text-sm font-medium hover:text-blue-300 transition-colors">Login</a>
-                {% endif %}
-            </div>
-        </div>
-    </nav>
-
-    <main class="container mx-auto mt-8 p-4">
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <!-- Sidebar: Search & Upload -->
-            <div class="lg:col-span-1 space-y-6">
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Filtros e Busca</h3>
-                    <form id="filter-form" hx-get="/directives" hx-target="#directives-table"
-                        hx-trigger="change, keyup delay:500ms">
-                        <div class="space-y-4">
-                            <input type="text" name="search" placeholder="Buscar por SN, Matrícula ou DT..."
-                                class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-
-                            {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspetor') %}
-                            <div class="space-y-2 border rounded-lg px-4 py-2 bg-white">
-                                <label class="text-sm font-semibold text-gray-700 block mb-2">Especialidades</label>
-                                <div class="grid grid-cols-2 gap-2">
-                                    {% for spec in ['MOT', 'HID', 'CEL', 'ELT', 'ELE', 'EST', 'EQV', 'ARM'] %}
-                                    <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
-                                        <input type="checkbox" name="especialidade" value="{{ spec }}" class="rounded text-blue-600 focus:ring-blue-500">
-                                        <span>{{ spec }}</span>
-                                    </label>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </form>
-                </div>
-
-                {% if current_user and current_user.role == 'admin' %}
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Upload CSV</h3>
-                    <form action="/upload" method="post" enctype="multipart/form-data" class="space-y-4">
-                        <input type="hidden" name="csrftoken" value="{{ csrf_token() }}">
-                        <div class="flex items-center justify-center w-full">
-                            <label
-                                class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                    <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true"
-                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
-                                    </svg>
-                                    <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Subir múltiplos
-                                            arquivos</span></p>
-                                    <p class="text-xs text-gray-500">Clique para selecionar</p>
-                                </div>
-                                <input id="dropzone-file" type="file" name="files" multiple class="hidden"
-                                    onchange="this.form.submit()" />
+                    {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspetor') %}
+                    <div class="space-y-2 border rounded-lg px-4 py-2 bg-white">
+                        <label class="text-sm font-semibold text-gray-700 block mb-2">Especialidades</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            {% for spec in ['MOT', 'HID', 'CEL', 'ELT', 'ELE', 'EST', 'EQV', 'ARM'] %}
+                            <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
+                                <input type="checkbox" name="especialidade" value="{{ spec }}" class="rounded text-blue-600 focus:ring-blue-500">
+                                <span>{{ spec }}</span>
                             </label>
+                            {% endfor %}
                         </div>
-                    </form>
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
-            </div>
+            </form>
+        </div>
 
-            <!-- Main Content: Table -->
-            <div class="lg:col-span-3">
-                <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-                    <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                        <h2 class="text-xl font-bold text-gray-800">Diretivas Técnicas</h2>
-                        <div class="flex space-x-2">
-                            {% if current_user %}
-                            <a id="export-link" href="/export/xlsx"
-                                class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                    </path>
-                                </svg>
-                                Exportar XLSX
-                            </a>
-                            {% endif %}
+        {% if current_user and current_user.role == 'admin' %}
+        <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <h3 class="text-lg font-semibold mb-4 text-gray-800">Upload CSV</h3>
+            <form action="/upload" method="post" enctype="multipart/form-data" class="space-y-4">
+                <input type="hidden" name="csrftoken" value="{{ csrf_token() }}">
+                <div class="flex items-center justify-center w-full">
+                    <label
+                        class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
+                            </svg>
+                            <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Subir múltiplos
+                                    arquivos</span></p>
+                            <p class="text-xs text-gray-500">Clique para selecionar</p>
                         </div>
-                    </div>
-                    <div id="directives-table">
-                        {% include 'partials/directives_table.html' %}
-                    </div>
+                        <input id="dropzone-file" type="file" name="files" multiple class="hidden"
+                            onchange="this.form.submit()" />
+                    </label>
                 </div>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Main Content: Table -->
+    <div class="lg:col-span-3">
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h2 class="text-xl font-bold text-gray-800">Diretivas Técnicas</h2>
+                <div class="flex space-x-2">
+                    {% if current_user %}
+                    <a id="export-link" href="/export/xlsx"
+                        class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                        Exportar XLSX
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div id="directives-table">
+                {% include 'partials/directives_table.html' %}
             </div>
         </div>
-    </main>
+    </div>
+</div>
+{% endblock %}
 
-    <footer class="mt-20 p-8 border-t border-gray-200 text-center text-gray-500 text-sm">
-        &copy; 2026 SIGDT - Sistema de Gestão de Diretivas Técnicas.
-        Desenvolvido para alta performance em hardware limitado.
-    </footer>
-    {% if current_user %}
-    <script>
-        // Logout logic
-        document.getElementById('logout-button').addEventListener('click', async function () {
-            try {
-                const response = await fetch('/users/logout', { 
-                    method: 'POST',
-                    headers: {
-                        'x-csrftoken': '{{ csrf_token() }}'
-                    }
-                });
-                if (response.ok) {
-                    window.location.href = '/login';
-                }
-            } catch (error) {
-                console.error('Logout failed', error);
-                window.location.href = '/login';
-            }
-        });
+{% block scripts %}
+{% if current_user %}
+<script>
+    // Sync Export Link with Filters
+    const filterForm = document.getElementById('filter-form');
+    const exportLink = document.getElementById('export-link');
 
-        // Sync Export Link with Filters
-        const filterForm = document.getElementById('filter-form');
-        const exportLink = document.getElementById('export-link');
-
-        if (filterForm && exportLink) {
-            const updateExportLink = () => {
-                const formData = new FormData(filterForm);
-                const params = new URLSearchParams();
-                
-                for (const [key, value] of formData.entries()) {
-                    if (value) {
-                        params.append(key, value);
-                    }
-                }
-                
-                exportLink.href = `/export/xlsx?${params.toString()}`;
-            };
-
-            filterForm.addEventListener('change', updateExportLink);
-            filterForm.addEventListener('keyup', (e) => {
-                // Delay to match HTMX delay if desired, or just immediate
-                updateExportLink();
-            });
+    if (filterForm && exportLink) {
+        const updateExportLink = () => {
+            const formData = new FormData(filterForm);
+            const params = new URLSearchParams();
             
-            // Initial sync
-            updateExportLink();
-        }
-    </script>
-    {% endif %}
-</body>
+            for (const [key, value] of formData.entries()) {
+                if (value) {
+                    params.append(key, value);
+                }
+            }
+            
+            exportLink.href = `/export/xlsx?${params.toString()}`;
+        };
 
-</html>
+        filterForm.addEventListener('change', updateExportLink);
+        filterForm.addEventListener('keyup', (e) => {
+            updateExportLink();
+        });
+        
+        // Initial sync
+        updateExportLink();
+    }
+</script>
+{% endif %}
+{% endblock %}

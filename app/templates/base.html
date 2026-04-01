@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SIGDT - Sistema de Gestão de Diretivas Técnicas{% endblock %}</title>
+    <link rel="icon" type="image/png" href="/static/img/favicon.png">
+    <script src="/static/js/htmx.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        htmx.on('htmx:configRequest', function (evt) {
+            evt.detail.headers['x-csrftoken'] = '{{ csrf_token() }}';
+        });
+    </script>
+    {% block head %}{% endblock %}
+</head>
+
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+    {% if not hide_navbar %}
+    <nav class="bg-blue-900 p-4 shadow-lg text-white">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold tracking-tight hover:text-blue-300 transition-colors">SIGDT</a>
+            <div class="space-x-6 flex items-center">
+                <a href="/" class="text-sm font-medium hover:text-blue-300 transition-colors">Dashboard</a>
+                {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspetor') %}
+                <a href="/master-directives"
+                    class="text-sm font-medium hover:text-blue-300 transition-colors">Diretivas</a>
+                {% endif %}
+                {% if current_user %}
+                {% if current_user.role == 'admin' %}
+                <a href="/users/manage" class="text-sm font-medium hover:text-blue-300 transition-colors">Usuários</a>
+                {% endif %}
+                <button id="logout-button"
+                    class="text-sm font-medium hover:text-red-300 transition-colors">Logout</button>
+                {% else %}
+                <a href="/login" class="text-sm font-medium hover:text-blue-300 transition-colors">Login</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <main class="{% if not full_width %}container mx-auto{% endif %} mt-8 p-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="mt-20 p-8 border-t border-gray-200 text-center text-gray-500 text-sm">
+        &copy; 2026 SIGDT - Sistema de Gestão de Diretivas Técnicas.
+        Desenvolvido para alta performance em hardware limitado.
+    </footer>
+
+    {% if current_user %}
+    <script>
+        // Logout logic
+        const logoutBtn = document.getElementById('logout-button');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async function () {
+                try {
+                    const response = await fetch('/users/logout', { 
+                        method: 'POST',
+                        headers: {
+                            'x-csrftoken': '{{ csrf_token() }}'
+                        }
+                    });
+                    if (response.ok) {
+                        window.location.href = '/login';
+                    }
+                } catch (error) {
+                    console.error('Logout failed', error);
+                    window.location.href = '/login';
+                }
+            });
+        }
+    </script>
+    {% endif %}
+
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

@@ -73,7 +73,7 @@ def get_current_inspetor_user(current_user: models.User = Depends(get_current_us
 
 @router.post("/token")
 async def login_for_access_token(request: Request, response: Response, db: Session = Depends(get_session), form_data: OAuth2PasswordRequestForm = Depends()):
-    from app.main import is_rate_limited
+    from app.core.config import is_rate_limited, ENVIRONMENT
     client_ip = request.client.host
     if is_rate_limited(f"login_{client_ip}"):
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Muitas tentativas de login. Tente novamente em 1 minuto.")
@@ -89,14 +89,13 @@ async def login_for_access_token(request: Request, response: Response, db: Sessi
     access_token = security.create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
-    import os
     response.set_cookie(
         key="access_token", 
         value=access_token, 
         httponly=True, 
         max_age=security.ACCESS_TOKEN_EXPIRE_MINUTES * 60, 
         samesite="lax",
-        secure=os.getenv("ENVIRONMENT") == "production"
+        secure=ENVIRONMENT == "production"
     )
     return {"status": "success"}
 
@@ -123,7 +122,7 @@ def create_user(
     new_user = actions.create_user(db=db, user=user_in, role=role)
     
     # Return HTML fragment for HTMX to append to the list
-    from app.main import templates
+    from app.core.templates import templates
     return templates.TemplateResponse(request=request, name="partials/user_row.html", context={
         "user": new_user
     })

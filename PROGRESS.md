@@ -36,6 +36,19 @@
 
 ---
 
+## Versão 4.2.0 (branch: `v4.2.0-refactor`)
+
+### Status Atual: Fase 2 — Integridade Arquitetural e Refatoração (CONCLUÍDO)
+
+#### 📅 01/04/2026 — Modularização e Unificação (RELATORIO_FINAL.MD Fase 2)
+- [x] **Modularização do Backend** — `main.py` decomposto em `app/core/` (config/templates) e `app/routers/` (auth/directives/admin).
+- [x] **Unificação do Frontend** — Implementação de `base.html` com herança Jinja2, eliminando duplicação de Navbar e Scripts.
+- [x] **Gestão de Banco de Dados** — Remoção de `create_all()` do startup flow, delegando gestão de schema exclusivamente ao Alembic.
+- [x] **Dependências Locais** — HTMX internalizado em `app/static/js/` para suporte a ambientes offline.
+- [x] **Resolução de Dependências Circulares** — Refatoração de `app/users/routes.py` para usar módulos `core`.
+
+---
+
 ## Versão 4.1.0 (branch: `v4.1.0-security`)
 
 ### Status Atual: Fase 1 — Estabilização e Segurança Crítica (CONCLUÍDO)

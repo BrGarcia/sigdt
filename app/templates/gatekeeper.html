@@ -1,19 +1,25 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acesso Restrito - SIGDT</title>
-    <link rel="icon" type="image/png" href="/static/img/favicon.png">
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-black flex items-center justify-center h-screen">
+{% extends "base.html" %}
+
+{% set hide_navbar = True %}
+{% set full_width = True %}
+
+{% block title %}Acesso Restrito - SIGDT{% endblock %}
+
+{% block head %}
+<style>
+    body { background-color: #000; }
+    footer { border-color: #333; color: #666; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center">
     <div class="w-full max-w-md bg-gray-900 rounded-lg shadow-2xl p-8 border border-gray-800">
         <div class="text-center mb-8">
             <h1 class="text-3xl font-bold text-white tracking-widest">SIGDT</h1>
             <p class="text-gray-500 text-sm mt-2">SISTEMA DE GESTÃO DE DIRETIVAS TÉCNICAS</p>
         </div>
-        
+
         <form action="/gatekeeper" method="post" class="space-y-6">
             <input type="hidden" name="csrftoken" value="{{ csrf_token() }}">
             <div>
@@ -21,22 +27,22 @@
                 <input type="password" id="password" name="password" required autofocus
                     class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all text-center tracking-widest">
             </div>
-            
+
             {% if request.query_params.get('error') %}
-            <div class="text-red-500 text-xs text-center font-bold animate-pulse">
-                SENHA INCORRETA. ACESSO NEGADO.
+            <div class="text-red-500 text-xs text-center font-bold tracking-tight bg-red-900/20 py-2 rounded">
+                ACESSO NEGADO: SENHA INCORRETA
             </div>
             {% endif %}
-            
+
             <button type="submit"
-                class="w-full bg-blue-700 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-colors tracking-widest text-sm">
-                ENTRAR NO SISTEMA
+                class="w-full bg-blue-700 hover:bg-blue-600 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-[0.98] tracking-widest">
+                VERIFICAR CREDENCIAL
             </button>
         </form>
         
-        <div class="mt-8 text-center text-gray-600 text-[10px] tracking-tight">
+        <div class="mt-8 text-center text-gray-600 text-[10px] tracking-tight uppercase">
             PROPRIEDADE RESTRITA. O ACESSO NÃO AUTORIZADO É MONITORADO.
         </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}

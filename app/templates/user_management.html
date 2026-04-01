@@ -1,107 +1,61 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciamento de Usuários - SIGDT</title>
-    <link rel="icon" type="image/png" href="/static/img/favicon.png">
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 font-sans leading-normal tracking-normal">
-    <nav class="bg-blue-900 p-4 shadow-lg text-white">
-        <div class="container mx-auto flex justify-between items-center">
-            <a href="/" class="text-2xl font-bold tracking-tight hover:text-blue-300 transition-colors">SIGDT</a>
-            <div class="space-x-6 flex items-center">
-                <a href="/" class="text-sm font-medium hover:text-blue-300 transition-colors">Dashboard</a>
-                {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspetor') %}
-                    <a href="/master-directives" class="text-sm font-medium hover:text-blue-300 transition-colors">Diretivas</a>
-                {% endif %}
-                <a href="/users/manage" class="text-sm font-medium hover:text-blue-300 transition-colors">Usuários</a>
-                <button id="logout-button" class="text-sm font-medium hover:text-red-300 transition-colors">Logout</button>
-            </div>
-        </div>
-    </nav>
+{% extends "base.html" %}
 
-    <main class="container mx-auto mt-8 p-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <!-- Create User Form -->
-            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                <h3 class="text-lg font-semibold mb-4 text-gray-800">Criar Novo Usuário</h3>
-                <form hx-post="/users/" hx-target="#user-list" hx-swap="beforeend" hx-on::after-request="if(event.detail.successful) this.reset()" class="space-y-4">
-                    <div>
-                        <label for="username" class="block text-sm font-medium text-gray-700">Usuário</label>
-                        <input type="text" name="username" id="username" required class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                        <input type="email" name="email" id="email" required class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
-                        <input type="password" name="password" id="password" required class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label for="role" class="block text-sm font-medium text-gray-700">Role</label>
-                        <select name="role" id="role" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="inspetor">Inspetor</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="especialidade" class="block text-sm font-medium text-gray-700">Especialidade</label>
-                        <select name="especialidade" id="especialidade" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Não definida</option>
-                            <option value="BMA">BMA</option>
-                            <option value="BET">BET</option>
-                            <option value="BEI">BEI</option>
-                            <option value="BEP">BEP</option>
-                            <option value="BEV">BEV</option>
-                            <option value="BMB">BMB</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="w-full bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-blue-800">Criar Usuário</button>
-                </form>
-            </div>
+{% block title %}Gerenciamento de Usuários - SIGDT{% endblock %}
 
-            <!-- User List -->
-            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                <h3 class="text-lg font-semibold mb-4 text-gray-800">Usuários Registrados</h3>
-                <div id="user-list" class="space-y-2">
-                    {% for user in users %}
-                        <div class="flex justify-between items-center p-2 border-b">
-                            <span>{{ user.username }} ({{ user.role }}) - {{ user.especialidade or 'Sem especialidade' }}</span>
-                            {% if user.role != 'admin' %}
-                            <button hx-delete="/users/{{ user.id }}" hx-target="closest div" hx-swap="delete" class="text-red-500 hover:text-red-700 font-bold px-2 py-1" title="Apagar Usuário" hx-confirm="Tem certeza que deseja apagar este usuário?">X</button>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <!-- Create User Form -->
+    <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+        <h3 class="text-lg font-semibold mb-4 text-gray-800">Criar Novo Usuário</h3>
+        <form hx-post="/users/" hx-target="#user-list" hx-swap="beforeend" hx-on::after-request="if(event.detail.successful) this.reset()" class="space-y-4">
+            <div>
+                <label for="username" class="block text-sm font-medium text-gray-700">Usuário</label>
+                <input type="text" name="username" id="username" required class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" name="email" id="email" required class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
+                <input type="password" name="password" id="password" required class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label for="role" class="block text-sm font-medium text-gray-700">Role</label>
+                <select name="role" id="role" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="inspetor">Inspetor</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div>
+                <label for="especialidade" class="block text-sm font-medium text-gray-700">Especialidade</label>
+                <select name="especialidade" id="especialidade" class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Não definida</option>
+                    <option value="BMA">BMA</option>
+                    <option value="BET">BET</option>
+                    <option value="BEI">BEI</option>
+                    <option value="BEP">BEP</option>
+                    <option value="BEV">BEV</option>
+                    <option value="BMB">BMB</option>
+                </select>
+            </div>
+            <button type="submit" class="w-full bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-blue-800">Criar Usuário</button>
+        </form>
+    </div>
+
+    <!-- User List -->
+    <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+        <h3 class="text-lg font-semibold mb-4 text-gray-800">Usuários Registrados</h3>
+        <div id="user-list" class="space-y-2">
+            {% for user in users %}
+                <div class="flex justify-between items-center p-2 border-b">
+                    <span>{{ user.username }} ({{ user.role }}) - {{ user.especialidade or 'Sem especialidade' }}</span>
+                    {% if user.role != 'admin' %}
+                    <button hx-delete="/users/{{ user.id }}" hx-target="closest div" hx-swap="delete" class="text-red-500 hover:text-red-700 font-bold px-2 py-1" title="Apagar Usuário" hx-confirm="Tem certeza que deseja apagar este usuário?">X</button>
+                    {% endif %}
                 </div>
-            </div>
+            {% endfor %}
         </div>
-    </main>
-
-    <script>
-        htmx.on('htmx:configRequest', function (evt) {
-            evt.detail.headers['x-csrftoken'] = '{{ csrf_token() }}';
-        });
-
-        document.getElementById('logout-button').addEventListener('click', async function() {
-            try {
-                const response = await fetch('/users/logout', { 
-                    method: 'POST',
-                    headers: {
-                        'x-csrftoken': '{{ csrf_token() }}'
-                    }
-                });
-                if (response.ok) {
-                    window.location.href = '/login';
-                }
-            } catch (error) {
-                console.error('Logout failed', error);
-                window.location.href = '/login';
-            }
-        });
-    </script>
-</body>
-</html>
+    </div>
+</div>
+{% endblock %}

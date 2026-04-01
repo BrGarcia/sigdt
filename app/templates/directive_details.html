@@ -1,216 +1,165 @@
-<!DOCTYPE html>
-<html lang="pt-br">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detalhes da Diretiva - SIGDT</title>
-    <link rel="icon" type="image/png" href="/static/img/favicon.png">
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        htmx.on('htmx:configRequest', function (evt) {
-            evt.detail.headers['x-csrftoken'] = '{{ csrf_token() }}';
-        });
-    </script>
-</head>
+{% block title %}Detalhes da Diretiva - SIGDT{% endblock %}
 
-<body class="bg-gray-100 font-sans leading-normal tracking-normal">
-    <nav class="bg-blue-900 p-4 shadow-lg text-white">
-        <div class="container mx-auto flex justify-between items-center">
-            <a href="/" class="text-2xl font-bold tracking-tight hover:text-blue-300 transition-colors">SIGDT</a>
-            <div class="space-x-6 flex items-center">
-                <a href="/" class="text-sm font-medium hover:text-blue-300 transition-colors">Dashboard</a>
-                {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspetor') %}
-                    <a href="/master-directives" class="text-sm font-medium hover:text-blue-300 transition-colors">Diretivas</a>
-                {% endif %}
-                {% if current_user %}
-                    {% if current_user.role == 'admin' %}
-                        <a href="/users/manage" class="text-sm font-medium hover:text-blue-300 transition-colors">Usuários</a>
-                    {% endif %}
-                    <button id="logout-button" class="text-sm font-medium hover:text-red-300 transition-colors">Logout</button>
-                {% else %}
-                    <a href="/login" class="text-sm font-medium hover:text-blue-300 transition-colors">Login</a>
-                {% endif %}
-            </div>
+{% block content %}
+<div class="mb-4">
+    <button onclick="window.history.back()" class="flex items-center text-blue-900 hover:text-blue-700 font-medium transition-colors">
+        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        VOLTAR
+    </button>
+</div>
+<div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4">{{ diretiva.diretiva_item.diretiva_tecnica.codigo }}</h2>
 
-        </div>
-    </nav>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+        <p><strong>FADT:</strong> {{ diretiva.diretiva_item.fadt or 'N/A' }}</p>
+        <p><strong>Tarefa:</strong> {{ diretiva.diretiva_item.tarefa or 'N/A' }}</p>
+        <p><strong>Matrícula:</strong> {{ diretiva.aeronave.matricula }}</p>
+        <p><strong>SN Aeronave:</strong> {{ diretiva.aeronave.numero_serie }}</p>
+        <p><strong>Status Atual:</strong> {{ diretiva.status }}</p>
+        <p><strong>Especialidade:</strong> {{ diretiva.diretiva_item.diretiva_tecnica.especialidade or 'Não definida' }}</p>
+        <p><strong>GUT Score:</strong> {{ diretiva.gut }}</p>
+        <p><strong>Origem Status:</strong> {{ diretiva.origem_status | upper }} {% if diretiva.concluida_automaticamente %}(Auto-concluída){% endif %}</p>
+        {% if diretiva.ultima_referencia_snapshot %}
+        <p class="md:col-span-2 text-xs text-gray-500 italic">Última atualização via snapshot: {{ diretiva.ultima_referencia_snapshot }}</p>
+        {% endif %}
+    </div>
 
-    <main class="container mx-auto mt-8 p-4">
-        <div class="mb-4">
-            <button onclick="window.history.back()" class="flex items-center text-blue-900 hover:text-blue-700 font-medium transition-colors">
-                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                VOLTAR
-            </button>
-        </div>
-        <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">{{ diretiva.diretiva_item.diretiva_tecnica.codigo }}</h2>
+    <div class="mt-6">
+        <h3 class="text-lg font-semibold text-gray-800">Objetivo (Master)</h3>
+        <p class="text-gray-700">{{ diretiva.diretiva_item.diretiva_tecnica.objetivo }}</p>
+    </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-                <p><strong>FADT:</strong> {{ diretiva.diretiva_item.fadt or 'N/A' }}</p>
-                <p><strong>Tarefa:</strong> {{ diretiva.diretiva_item.tarefa or 'N/A' }}</p>
-                <p><strong>Matrícula:</strong> {{ diretiva.aeronave.matricula }}</p>
-                <p><strong>SN Aeronave:</strong> {{ diretiva.aeronave.numero_serie }}</p>
-                <p><strong>Status Atual:</strong> {{ diretiva.status }}</p>
-                <p><strong>Especialidade:</strong> {{ diretiva.diretiva_item.diretiva_tecnica.especialidade or 'Não definida' }}</p>
-                <p><strong>GUT Score:</strong> {{ diretiva.gut }}</p>
-                <p><strong>Origem Status:</strong> {{ diretiva.origem_status | upper }} {% if diretiva.concluida_automaticamente %}(Auto-concluída){% endif %}</p>
-                {% if diretiva.ultima_referencia_snapshot %}
-                <p class="md:col-span-2 text-xs text-gray-500 italic">Última atualização via snapshot: {{ diretiva.ultima_referencia_snapshot }}</p>
-                {% endif %}
-            </div>
+    <div class="mt-6">
+        <h3 class="text-lg font-semibold text-gray-800">Observações</h3>
+        <p class="text-gray-700 whitespace-pre-wrap">{{ diretiva.observacao or 'Sem observações.' }}</p>
+    </div>
 
-            <div class="mt-6">
-                <h3 class="text-lg font-semibold text-gray-800">Objetivo (Master)</h3>
-                <p class="text-gray-700">{{ diretiva.diretiva_item.diretiva_tecnica.objetivo }}</p>
-            </div>
-
-            <div class="mt-6">
-                <h3 class="text-lg font-semibold text-gray-800">Observações</h3>
-                <p class="text-gray-700 whitespace-pre-wrap">{{ diretiva.observacao or 'Sem observações.' }}</p>
-            </div>
-
-            {% if diretiva.pdf_path %}
-            <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <h3 class="text-lg font-semibold text-blue-900 mb-2">Documentação Anexa</h3>
-                <div class="flex items-center space-x-4">
-                    <button type="button" onclick="openPdfModal()"
-                        class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                            </path>
-                        </svg>
-                        Visualizar Documento (PDF)
-                    </button>
-                    
-                    {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspetor') %}
-                    <button hx-delete="/directives/{{ diretiva.id }}/attachment" 
-                            hx-confirm="Tem certeza que deseja remover permanentemente este anexo?"
-                            hx-target="body"
-                            class="inline-flex items-center px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 text-sm font-medium rounded-md transition-colors border border-red-200">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        Remover Anexo
-                    </button>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
-
-            {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspetor') %}
-            <div class="mt-8 border-t pt-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Atualizar Execução na Aeronave</h3>
-                <form hx-post="/directives/{{ diretiva.id }}" hx-target="body" hx-encoding="multipart/form-data"
-                    class="space-y-4">
-                    <div>
-                        <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
-                        <select name="status" id="status"
-                            class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="Pendente" {% if diretiva.status=='Pendente' %}selected{% endif %}>Pendente</option>
-                            <option value="Em andamento" {% if diretiva.status=='Em andamento' %}selected{% endif %}>Em andamento</option>
-                            <option value="Concluída" {% if diretiva.status=='Concluída' %}selected{% endif %}>Concluída</option>
-                            <option value="Não aplicável" {% if diretiva.status=='Não aplicável' %}selected{% endif %}>Não aplicável</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Especialidades Responsáveis (Master)</label>
-                        <div class="p-2 bg-gray-100 rounded border text-sm text-gray-600">
-                            {{ diretiva.diretiva_item.diretiva_tecnica.especialidade.replace(';', ', ') if diretiva.diretiva_item.diretiva_tecnica.especialidade else 'Não definida' }}
-                        </div>
-                    </div>
-                    <div>
-                        <label for="pdf_file" class="block text-sm font-medium text-gray-700">Alterar/Anexar Comprovante
-                            (PDF) <span class="text-xs text-gray-500 font-normal">(Máx: 10MB)</span></label>
-                        <input type="file" name="pdf_file" id="pdf_file" accept=".pdf" 
-                            onchange="validateFileSize(this)"
-                            class="mt-1 block w-full text-sm text-gray-500
-                            file:mr-4 file:py-2 file:px-4
-                            file:rounded-md file:border-0
-                            file:text-sm file:font-semibold
-                            file:bg-blue-50 file:text-blue-700
-                            hover:file:bg-blue-100">
-                        <p id="size-error" class="text-red-600 text-xs mt-1 hidden">O arquivo excede o limite de 10MB.</p>
-                    </div>
-                    <div>
-                        <label for="observacoes" class="block text-sm font-medium text-gray-700">Observações de
-                            Execução</label>
-                        <textarea name="observacoes" id="observacoes" rows="4"
-                            class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">{{ diretiva.observacao or '' }}</textarea>
-                    </div>
-                    <button type="submit" class="bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-blue-800">Salvar
-                        Alterações</button>
-                </form>
-            </div>
-            {% endif %}
-        </div>
-    </main>
-
-    <!-- Modal PDF -->
     {% if diretiva.pdf_path %}
-    <div id="pdf-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-75 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden">
-            <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
-                <h3 class="text-xl font-bold text-gray-800">Visualização de Documento Anexo</h3>
-                <button type="button" onclick="closePdfModal()" class="text-gray-500 hover:text-gray-800 transition-colors focus:outline-none">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div class="flex-grow w-full relative">
-                <iframe src="/uploads/{{ diretiva.pdf_path }}" class="absolute inset-0 w-full h-full border-0"></iframe>
-            </div>
+    <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+        <h3 class="text-lg font-semibold text-blue-900 mb-2">Documentação Anexa</h3>
+        <div class="flex items-center space-x-4">
+            <button type="button" onclick="openPdfModal()"
+                class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                </svg>
+                Visualizar Documento (PDF)
+            </button>
+            
+            {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspetor') %}
+            <button hx-delete="/directives/{{ diretiva.id }}/attachment" 
+                    hx-confirm="Tem certeza que deseja remover permanentemente este anexo?"
+                    hx-target="body"
+                    class="inline-flex items-center px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 text-sm font-medium rounded-md transition-colors border border-red-200">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                Remover Anexo
+            </button>
+            {% endif %}
         </div>
     </div>
     {% endif %}
 
-    {% if current_user %}
-    <script>
-        function validateFileSize(input) {
-            const file = input.files[0];
-            const errorElement = document.getElementById('size-error');
-            const submitButton = input.closest('form').querySelector('button[type="submit"]');
-            
-            if (file && file.size > 10 * 1024 * 1024) {
-                errorElement.classList.remove('hidden');
-                submitButton.disabled = true;
-                submitButton.classList.add('opacity-50', 'cursor-not-allowed');
-            } else {
-                errorElement.classList.add('hidden');
-                submitButton.disabled = false;
-                submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
-            }
-        }
-
-        document.getElementById('logout-button').addEventListener('click', async function() {
-            try {
-                const response = await fetch('/users/logout', { 
-                    method: 'POST',
-                    headers: {
-                        'x-csrftoken': '{{ csrf_token() }}'
-                    }
-                });
-                if (response.ok) {
-                    window.location.href = '/login';
-                }
-            } catch (error) {
-                console.error('Logout failed', error);
-                window.location.href = '/login';
-            }
-        });
-    </script>
+    {% if current_user and (current_user.role == 'admin' or current_user.role == 'inspetor') %}
+    <div class="mt-8 border-t pt-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Atualizar Execução na Aeronave</h3>
+        <form hx-post="/directives/{{ diretiva.id }}" hx-target="body" hx-encoding="multipart/form-data"
+            class="space-y-4">
+            <div>
+                <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+                <select name="status" id="status"
+                    class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="Pendente" {% if diretiva.status=='Pendente' %}selected{% endif %}>Pendente</option>
+                    <option value="Em andamento" {% if diretiva.status=='Em andamento' %}selected{% endif %}>Em andamento</option>
+                    <option value="Concluída" {% if diretiva.status=='Concluída' %}selected{% endif %}>Concluída</option>
+                    <option value="Não aplicável" {% if diretiva.status=='Não aplicável' %}selected{% endif %}>Não aplicável</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Especialidades Responsáveis (Master)</label>
+                <div class="p-2 bg-gray-100 rounded border text-sm text-gray-600">
+                    {{ diretiva.diretiva_item.diretiva_tecnica.especialidade.replace(';', ', ') if diretiva.diretiva_item.diretiva_tecnica.especialidade else 'Não definida' }}
+                </div>
+            </div>
+            <div>
+                <label for="pdf_file" class="block text-sm font-medium text-gray-700">Alterar/Anexar Comprovante
+                    (PDF) <span class="text-xs text-gray-500 font-normal">(Máx: 10MB)</span></label>
+                <input type="file" name="pdf_file" id="pdf_file" accept=".pdf" 
+                    onchange="validateFileSize(this)"
+                    class="mt-1 block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-md file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100">
+                <p id="size-error" class="text-red-600 text-xs mt-1 hidden">O arquivo excede o limite de 10MB.</p>
+            </div>
+            <div>
+                <label for="observacoes" class="block text-sm font-medium text-gray-700">Observações de
+                    Execução</label>
+                <textarea name="observacoes" id="observacoes" rows="4"
+                    class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">{{ diretiva.observacao or '' }}</textarea>
+            </div>
+            <button type="submit" class="bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-blue-800">Salvar
+                Alterações</button>
+        </form>
+    </div>
     {% endif %}
+</div>
 
-    <script>
-        function openPdfModal() {
-            document.getElementById('pdf-modal').classList.remove('hidden');
+<!-- Modal PDF -->
+{% if diretiva.pdf_path %}
+<div id="pdf-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-75 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden">
+        <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
+            <h3 class="text-xl font-bold text-gray-800">Visualização de Documento Anexo</h3>
+            <button type="button" onclick="closePdfModal()" class="text-gray-500 hover:text-gray-800 transition-colors focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="flex-grow w-full relative">
+            <iframe src="/uploads/{{ diretiva.pdf_path }}" class="absolute inset-0 w-full h-full border-0"></iframe>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function validateFileSize(input) {
+        const file = input.files[0];
+        const errorElement = document.getElementById('size-error');
+        const submitButton = input.closest('form').querySelector('button[type="submit"]');
+        
+        if (file && file.size > 10 * 1024 * 1024) {
+            errorElement.classList.remove('hidden');
+            submitButton.disabled = true;
+            submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            errorElement.classList.add('hidden');
+            submitButton.disabled = false;
+            submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    function openPdfModal() {
+        const modal = document.getElementById('pdf-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
         }
+    }
 
-        function closePdfModal() {
-            document.getElementById('pdf-modal').classList.add('hidden');
+    function closePdfModal() {
+        const modal = document.getElementById('pdf-modal');
+        if (modal) {
+            modal.classList.add('hidden');
             document.body.style.overflow = 'auto';
         }
-    </script>
-</body>
-
-</html>
+    }
+</script>
+{% endblock %}
