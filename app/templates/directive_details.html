@@ -68,6 +68,7 @@
         <h3 class="text-lg font-semibold text-gray-800 mb-4">Atualizar Execução na Aeronave</h3>
         <form hx-post="/directives/{{ diretiva.id }}" hx-target="body" hx-encoding="multipart/form-data"
             class="space-y-4">
+            <input type="hidden" name="csrftoken" value="{{ csrf_token() }}">
             <div>
                 <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
                 <select name="status" id="status"

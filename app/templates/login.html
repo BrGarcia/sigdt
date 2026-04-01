@@ -59,7 +59,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
-                    'x-csrftoken': '{{ csrf_token() }}'
+                    'x-csrftoken': getCsrfToken()
                 },
                 body: params
             });

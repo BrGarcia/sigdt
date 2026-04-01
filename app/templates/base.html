@@ -9,8 +9,72 @@
     <link rel="stylesheet" href="/static/css/tailwind.min.css">
     <script src="/static/js/htmx.min.js"></script>
     <script>
+        function getCsrfToken() {
+            const name = 'csrftoken=';
+            const decodedCookie = decodeURIComponent(document.cookie || '');
+            const parts = decodedCookie.split(';');
+            for (let i = 0; i < parts.length; i++) {
+                const c = parts[i].trim();
+                if (c.indexOf(name) === 0) {
+                    return c.substring(name.length);
+                }
+            }
+            return '';
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const token = getCsrfToken();
+            if (!token) return;
+            document.querySelectorAll('input[name="csrftoken"]').forEach(function (input) {
+                input.value = token;
+            });
+        });
+
+        document.addEventListener('submit', async function (evt) {
+            const form = evt.target;
+            if (!(form instanceof HTMLFormElement)) return;
+            if (form.hasAttribute('hx-post') || form.hasAttribute('data-hx-post')) return;
+            const method = (form.getAttribute('method') || 'get').toLowerCase();
+            if (method === 'get') return;
+            const token = getCsrfToken();
+            if (!token) return;
+
+            evt.preventDefault();
+            const action = form.getAttribute('action') || window.location.href;
+            const formData = new FormData(form);
+            if (!formData.has('csrftoken')) {
+                formData.append('csrftoken', token);
+            }
+
+            try {
+                const response = await fetch(action, {
+                    method: method.toUpperCase(),
+                    headers: { 'x-csrftoken': token },
+                    body: formData
+                });
+
+                if (response.redirected) {
+                    window.location.href = response.url;
+                    return;
+                }
+
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('text/html')) {
+                    const html = await response.text();
+                    document.open();
+                    document.write(html);
+                    document.close();
+                }
+            } catch (error) {
+                console.error('Form submission failed', error);
+            }
+        });
+
         htmx.on('htmx:configRequest', function (evt) {
-            evt.detail.headers['x-csrftoken'] = '{{ csrf_token() }}';
+            const token = getCsrfToken();
+            if (token) {
+                evt.detail.headers['x-csrftoken'] = token;
+            }
         });
     </script>
     {% block head %}{% endblock %}
@@ -60,7 +124,7 @@
                     const response = await fetch('/users/logout', { 
                         method: 'POST',
                         headers: {
-                            'x-csrftoken': '{{ csrf_token() }}'
+                            'x-csrftoken': getCsrfToken()
                         }
                     });
                     if (response.ok) {

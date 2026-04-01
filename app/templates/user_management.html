@@ -8,6 +8,7 @@
     <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
         <h3 class="text-lg font-semibold mb-4 text-gray-800">Criar Novo Usuário</h3>
         <form hx-post="/users/" hx-target="#user-list" hx-swap="beforeend" hx-on::after-request="if(event.detail.successful) this.reset()" class="space-y-4">
+            <input type="hidden" name="csrftoken" value="{{ csrf_token() }}">
             <div>
                 <label for="username" class="block text-sm font-medium text-gray-700">Usuário</label>
                 <input type="text" name="username" id="username" required class="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">

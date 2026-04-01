@@ -3,6 +3,9 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Password Hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

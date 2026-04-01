@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session
-from starlette_csrf import CSRFMiddleware
+from app.core.csrf import CSRFMiddleware
 
 from app.database import engine
 from app.users import routes as user_routes
