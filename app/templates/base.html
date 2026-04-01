@@ -50,6 +50,7 @@
                 const response = await fetch(action, {
                     method: method.toUpperCase(),
                     headers: { 'x-csrftoken': token },
+                    credentials: 'same-origin',
                     body: formData
                 });
 
@@ -125,7 +126,8 @@
                         method: 'POST',
                         headers: {
                             'x-csrftoken': getCsrfToken()
-                        }
+                        },
+                        credentials: 'same-origin'
                     });
                     if (response.ok) {
                         window.location.href = '/login';

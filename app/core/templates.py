@@ -8,6 +8,9 @@ templates = Jinja2Templates(directory="app/templates")
 def get_csrf_token(context):
     request = context.get("request")
     if request:
+        cookie_token = request.cookies.get("csrftoken")
+        if cookie_token:
+            return cookie_token
         return request.scope.get("csrf_token") or ""
     return ""
 

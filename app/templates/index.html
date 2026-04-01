@@ -49,7 +49,7 @@
                             <p class="text-xs text-gray-500">Clique para selecionar</p>
                         </div>
                         <input id="dropzone-file" type="file" name="files" multiple class="hidden"
-                            onchange="this.form.submit()" />
+                            onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" />
                     </label>
                 </div>
             </form>
