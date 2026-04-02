@@ -6,6 +6,7 @@
 
 #### 📅 02/04/2026 — Inicialização
 - [x] **Setup da Branch** — Criação da branch `v5.0.0` para desenvolvimento da nova major version.
+- [x] **Cadastro Manual** — Implementação de rota e tela para cadastro manual de Diretivas Técnicas (Master).
 - [x] **Ajuste de Interface** — Remoção do campo FADT na coluna "Diretiva Técnica" do dashboard.
 - [ ] **Planejamento de Features** — Lógica de novas funcionalidades para a v5.0.0 (v5.0.0-roadmap).
 - [x] **Ajuste de Versão no App** — Atualização do FastAPI(version="5.0.0").

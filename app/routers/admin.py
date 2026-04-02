@@ -13,7 +13,7 @@ from app.core.config import check_gatekeeper
 from app.core.templates import templates
 from app.users.routes import get_current_admin_user, get_current_inspetor_user, get_current_user
 from app.users.models import User
-from app.services.csv_service import process_csv
+from app.services.csv_service import process_csv, sanitize_codigo
 
 router = APIRouter(tags=["admin"])
 
@@ -168,6 +168,51 @@ async def list_master_directives(
         "total_pages": total_pages,
         "search": search
     })
+
+@router.get("/master-directives/new", response_class=HTMLResponse, dependencies=[Depends(get_current_inspetor_user)])
+async def get_master_directive_create_page(
+    request: Request,
+    current_user: User = Depends(get_current_inspetor_user)
+):
+    if not check_gatekeeper(request):
+        return RedirectResponse(url="/gatekeeper")
+    return templates.TemplateResponse(request=request, name="master_directive_create.html", context={
+        "current_user": current_user
+    })
+
+@router.post("/master-directives/new", response_class=HTMLResponse, dependencies=[Depends(get_current_inspetor_user)])
+async def create_master_directive(
+    request: Request,
+    codigo: str = Form(...),
+    objetivo: str = Form(...),
+    classe: str = Form("I"),
+    categoria: str = Form("R"),
+    especialidades: List[str] = Form([]),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_inspetor_user)
+):
+    codigo_simplificado = sanitize_codigo(codigo)
+    
+    # Verificar se ja existe
+    existing = session.get(DiretivaTecnica, codigo_simplificado)
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Diretiva com código {codigo_simplificado} já existe.")
+
+    new_dt = DiretivaTecnica(
+        codigo_simplificado=codigo_simplificado,
+        codigo=codigo,
+        objetivo=objetivo,
+        classe=classe,
+        categoria=categoria,
+        especialidade=";".join(especialidades),
+        updated_at=datetime.now(timezone.utc)
+    )
+    
+    session.add(new_dt)
+    session.commit()
+    session.refresh(new_dt)
+    
+    return RedirectResponse(url="/master-directives", status_code=303)
 
 @router.get("/master-directives/{codigo_simplificado}", response_class=HTMLResponse, dependencies=[Depends(get_current_inspetor_user)])
 async def get_master_directive_edit(
