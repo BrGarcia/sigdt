@@ -1,5 +1,16 @@
 # PROGRESSO DO PROJETO SIGDT
 
+## Versão 5.0.0 (branch: `v5.0.0`)
+
+### Status Atual: Início do Desenvolvimento (EM PROGRESSO)
+
+#### 📅 02/04/2026 — Inicialização
+- [x] **Setup da Branch** — Criação da branch `v5.0.0` para desenvolvimento da nova major version.
+- [ ] **Planejamento de Features** — Lógica de novas funcionalidades para a v5.0.0 (v5.0.0-roadmap).
+- [x] **Ajuste de Versão no App** — Atualização do FastAPI(version="5.0.0").
+
+---
+
 ## Versão 3.5.0 (branch: `v3.5.0-dev`)
 
 ### Status Atual: Fase 1 — Estabilização e Segurança (CONCLUÍDO)

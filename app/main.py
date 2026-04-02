@@ -11,7 +11,10 @@ from app.users import schemas as user_schemas
 from app.core.config import SECRET_KEY, ADMIN_PASSWORD
 from app.routers import auth, directives, admin
 
-app = FastAPI(title="SIGDT - Sistema de Gestão de Diretivas Técnicas")
+app = FastAPI(
+    title="SIGDT - Sistema de Gestão de Diretivas Técnicas",
+    version="5.0.0"
+)
 
 # CSRF Protection
 app.add_middleware(CSRFMiddleware, secret=SECRET_KEY)
